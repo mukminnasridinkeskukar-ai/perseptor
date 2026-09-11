@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PERSEPTOR — Program Pembimbingan dan Supervisi Klinik Terintegrasi</title>
+<meta name="description" content="Platform tata kelola pembimbingan dan supervisi klinik Puskesmas — Dinas Kesehatan Kabupaten. Mendampingi, Membina, Meningkatkan Mutu Pelayanan.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f766e'/><path d='M22 52h14l8-18 12 34 9-20 6 8h9' stroke='white' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --teal-50:#f0fdfa;--teal-100:#ccfbf1;--teal-200:#99f6e4;--teal-300:#5eead4;--teal-400:#2dd4bf;--teal-500:#14b8a6;
+  --teal-600:#0d9488;--teal-700:#0f766e;--teal-800:#115e59;--teal-900:#134e4a;
+  --bg:#f6f9f8;--card:#ffffff;--line:#e2e8e6;--tx:#1a2e2b;--tx2:#5b6f6b;--tx3:#8aa09b;
+  --red:#dc2626;--red-bg:#fee2e2;--red-tx:#b91c1c;--amber:#d97706;--amber-bg:#fef3c7;--amber-tx:#92400e;
+  --green:#059669;--green-bg:#d1fae5;--green-tx:#065f46;--sky:#0284c7;--sky-bg:#e0f2fe;--sky-tx:#075985;
+  --violet:#7c3aed;--violet-bg:#ede9fe;--violet-tx:#5b21b6;
+  --radius:14px;--shadow:0 1px 3px rgba(15,60,55,.06),0 4px 16px rgba(15,60,55,.05);
+  --sidebar-w:248px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:15px}
+body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--tx);line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font:inherit;color:inherit}
+a{color:var(--teal-700)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#c3d4d0;border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============ LAYOUT ============ */
+#app{display:none;min-height:100vh}
+#app.on{display:flex}
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:linear-gradient(178deg,#0b3d38 0%,#0f766e 88%);color:#d7ece8;position:fixed;inset:0 auto 0 0;z-index:40;display:flex;flex-direction:column;transition:transform .25s}
+.brand{display:flex;gap:11px;align-items:center;padding:20px 18px 14px}
+.brand-logo{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.12);display:grid;place-items:center;flex:none}
+.brand h1{font-size:1.05rem;letter-spacing:.14em;color:#fff}
+.brand small{display:block;font-size:.66rem;font-weight:400;letter-spacing:.02em;color:#9ed4cc}
+.nav{flex:1;overflow-y:auto;padding:4px 10px 18px}
+.nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18)}
+.nav-group{margin-top:12px;padding:0 8px 4px;font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:#7fbdb4;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px;border-radius:9px;color:#d9eeea;font-size:.86rem;margin-top:2px}
+.nav-item svg{width:17px;height:17px;flex:none;opacity:.85}
+.nav-item:hover{background:rgba(255,255,255,.08)}
+.nav-item.on{background:#fff;color:var(--teal-800);font-weight:600}
+.nav-item .cnt{margin-left:auto;background:rgba(255,255,255,.18);border-radius:99px;font-size:.66rem;padding:1px 7px}
+.nav-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.12);font-size:.68rem;color:#8fc7bf;line-height:1.5}
+.main{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-width:0;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:10px 22px;min-height:58px}
+.burger{display:none;padding:6px;border-radius:8px}
+.burger:hover{background:var(--teal-50)}
+.searchbox{position:relative;flex:1;max-width:430px}
+.searchbox input{width:100%;padding:8px 12px 8px 36px;border:1.5px solid var(--line);border-radius:10px;background:#fbfdfc;font-size:.86rem;outline:none}
+.searchbox input:focus{border-color:var(--teal-500);box-shadow:0 0 0 3px var(--teal-100)}
+.searchbox>svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--tx3)}
+.searchbox kbd{position:absolute;right:9px;top:50%;transform:translateY(-50%);border:1px solid var(--line);background:#fff;border-radius:6px;font-size:.62rem;padding:1px 6px;color:var(--tx3);font-family:inherit}
+.search-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(15,60,55,.14);max-height:340px;overflow-y:auto;display:none;z-index:60}
+.search-drop.on{display:block}
+.search-drop .sd-item{display:block;width:100%;text-align:left;padding:9px 14px;border-bottom:1px solid #f0f4f3;font-size:.83rem}
+.search-drop .sd-item:hover{background:var(--teal-50)}
+.search-drop .sd-item small{display:block;color:var(--tx3);font-size:.7rem}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:6px}
+.icon-btn{position:relative;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--tx2)}
+.icon-btn:hover{background:var(--teal-50);color:var(--teal-700)}
+.icon-btn svg{width:19px;height:19px}
+.icon-btn .dot{position:absolute;top:6px;right:6px;min-width:16px;height:16px;border-radius:99px;background:var(--red);color:#fff;font-size:.6rem;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.userchip{display:flex;align-items:center;gap:9px;padding:5px 8px;border-radius:11px}
+.userchip:hover{background:var(--teal-50)}
+.avatar{width:34px;height:34px;border-radius:10px;background:var(--teal-700);color:#fff;font-weight:700;font-size:.78rem;display:grid;place-items:center;flex:none}
+.userchip b{font-size:.82rem;display:block;line-height:1.2;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.userchip small{font-size:.68rem;color:var(--tx2)}
+.content{padding:24px 26px 40px;flex:1}
+.footer{border-top:1px solid var(--line);background:#fff;padding:14px 26px;font-size:.75rem;color:var(--tx3);text-align:center;margin-top:auto}
+.scrim{position:fixed;inset:0;background:rgba(6,40,36,.45);z-index:35;display:none}
+.scrim.on{display:block}
+
+/* ============ COMPONENTS ============ */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:10px;font-size:.84rem;font-weight:600;border:1.5px solid transparent;transition:.15s;white-space:nowrap}
+.btn svg{width:15px;height:15px}
+.btn-p{background:var(--teal-700);color:#fff}
+.btn-p:hover{background:var(--teal-800)}
+.btn-o{background:#fff;border-color:var(--line);color:var(--tx)}
+.btn-o:hover{border-color:var(--teal-500);color:var(--teal-700);background:var(--teal-50)}
+.btn-d{background:var(--red-bg);color:var(--red-tx)}
+.btn-d:hover{background:#fecaca}
+.btn-s{padding:5px 10px;font-size:.76rem;border-radius:8px}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.icon-act{width:30px;height:30px;border-radius:8px;display:inline-grid;place-items:center;color:var(--tx2);vertical-align:middle}
+.icon-act:hover{background:var(--teal-50);color:var(--teal-700)}
+.icon-act.del:hover{background:var(--red-bg);color:var(--red)}
+.icon-act svg{width:15px;height:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--line)}
+.card-h h3{font-size:1rem}
+.card-h .sub{font-size:.76rem;color:var(--tx2);width:100%;margin-top:-6px}
+.card-b{padding:20px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+.page-h{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.page-h h2{font-size:1.35rem;letter-spacing:-.01em}
+.page-h p{color:var(--tx2);font-size:.84rem;max-width:640px}
+.page-h .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2.5px 10px;border-radius:99px;font-size:.7rem;font-weight:600;white-space:nowrap}
+.b-teal{background:var(--teal-100);color:var(--teal-800)}.b-green{background:var(--green-bg);color:var(--green-tx)}
+.b-red{background:var(--red-bg);color:var(--red-tx)}.b-amber{background:var(--amber-bg);color:var(--amber-tx)}
+.b-sky{background:var(--sky-bg);color:var(--sky-tx)}.b-gray{background:#eef2f1;color:#4b5f5b}.b-violet{background:var(--violet-bg);color:var(--violet-tx)}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+th{text-align:left;padding:10px 14px;font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--line);white-space:nowrap;background:#fafcfb}
+td{padding:11px 14px;border-bottom:1px solid #eef3f2;vertical-align:middle}
+tbody tr:hover{background:#fafdfc}
+tbody tr:last-child td{border-bottom:none}
+.tbl-wrap{overflow-x:auto;border-radius:0 0 var(--radius) var(--radius)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.76rem;font-weight:600;color:var(--tx2);margin-bottom:5px}
+.field .req{color:var(--red)}
+.inp,select.inp,textarea.inp{width:100%;padding:8.5px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:.85rem;outline:none;transition:.15s}
+.inp:focus{border-color:var(--teal-500);box-shadow:0 0 0 3px var(--teal-100)}
+textarea.inp{min-height:76px;resize:vertical}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.filters select{padding:7px 34px 7px 11px;border:1.5px solid var(--line);border-radius:9px;background:#fff;font-size:.8rem;outline:none;min-width:120px}
+.empty{padding:46px 20px;text-align:center;color:var(--tx3)}
+.empty svg{width:42px;height:42px;margin-bottom:10px;opacity:.5}
+.empty b{display:block;color:var(--tx2);font-size:.92rem;margin-bottom:3px}
+.empty span{font-size:.8rem}
+.sk{position:relative;overflow:hidden;background:#e8efed;border-radius:8px;min-height:14px}
+.sk::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:sk 1.3s infinite}
+@keyframes sk{to{transform:translateX(100%)}}
+
+/* modal */
+.modal-scrim{position:fixed;inset:0;background:rgba(6,40,36,.5);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow-y:auto}
+.modal-scrim.on{display:flex}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:640px;box-shadow:0 24px 64px rgba(6,40,36,.3);animation:pop .18s}
+.modal.wide{max-width:900px}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}}
+.modal-h{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.modal-h h3{font-size:1.02rem}
+.modal-h button{margin-left:auto}
+.modal-b{padding:20px;max-height:70vh;overflow-y:auto}
+.modal-f{display:flex;justify-content:flex-end;gap:9px;padding:14px 20px;border-top:1px solid var(--line)}
+
+/* toasts */
+#toasts{position:fixed;bottom:20px;right:20px;z-index:99;display:flex;flex-direction:column;gap:9px}
+.toast{background:#123f3a;color:#fff;padding:11px 16px;border-radius:11px;font-size:.83rem;box-shadow:0 10px 28px rgba(6,40,36,.3);display:flex;gap:9px;align-items:center;max-width:360px;animation:pop .2s}
+.toast.err{background:#7f1d1d}.toast svg{width:17px;height:17px;flex:none}
+
+/* ============ LOGIN & SETUP ============ */
+.auth{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(160deg,#0b3d38,#0f766e 55%,#14957f)}
+.auth-card{background:#fff;border-radius:20px;width:100%;max-width:440px;padding:34px;box-shadow:0 30px 80px rgba(4,32,28,.45)}
+.auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.auth-brand .logo{width:48px;height:48px;border-radius:13px;background:linear-gradient(135deg,var(--teal-600),var(--teal-800));display:grid;place-items:center}
+.auth-brand h1{font-size:1.2rem;letter-spacing:.13em;color:var(--teal-900)}
+.auth-brand small{font-size:.7rem;color:var(--tx2);letter-spacing:.03em}
+.auth h2{font-size:1.05rem;margin-bottom:2px}
+.auth .hint{font-size:.8rem;color:var(--tx2);margin-bottom:18px}
+.demo-list{margin-top:18px;border-top:1px dashed var(--line);padding-top:14px}
+.demo-list p{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);font-weight:700;margin-bottom:9px}
+.demo-btn{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:8px 11px;border:1.5px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:.79rem;transition:.15s}
+.demo-btn:hover{border-color:var(--teal-500);background:var(--teal-50)}
+.demo-btn b{display:block;font-size:.8rem}.demo-btn small{color:var(--tx3);font-size:.68rem}
+.auth-note{margin-top:14px;font-size:.7rem;color:var(--tx3);text-align:center;line-height:1.5}
+.setup-box{max-width:600px}
+.setup-box ol{margin:10px 0 16px 18px;font-size:.83rem;color:var(--tx2);display:grid;gap:6px}
+.setup-box code{background:var(--teal-50);color:var(--teal-800);padding:1px 6px;border-radius:6px;font-size:.78rem}
+</style>
+</head>
+<style>
+/* stat cards */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;gap:13px;align-items:center;cursor:pointer;transition:.15s}
+.stat:hover{border-color:var(--teal-400);transform:translateY(-2px)}
+.stat .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}
+.stat .ic svg{width:21px;height:21px}
+.stat b{font-size:1.5rem;line-height:1.15;display:block}
+.stat span{font-size:.72rem;color:var(--tx2);display:block;line-height:1.35}
+.stat small{font-size:.64rem;color:var(--tx3)}
+.ic-teal{background:var(--teal-100);color:var(--teal-700)}.ic-green{background:var(--green-bg);color:var(--green)}
+.ic-amber{background:var(--amber-bg);color:var(--amber)}.ic-red{background:var(--red-bg);color:var(--red)}.ic-sky{background:var(--sky-bg);color:var(--sky)}
+
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--line);border-top:1px solid var(--line)}
+.cal-d{min-height:104px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;font-size:.72rem}
+.cal-d .dnum{font-weight:700;color:var(--tx2);font-size:.72rem;margin-bottom:4px}
+.cal-d.other{background:#f7faf9;color:var(--tx3)}
+.cal-d.today .dnum{color:#fff;background:var(--teal-700);width:22px;height:22px;border-radius:7px;display:grid;place-items:center}
+.cal-ev{display:block;text-align:left;width:100%;border-radius:7px;padding:2.5px 7px;margin-bottom:3px;font-size:.68rem;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-ev:hover{filter:brightness(.92)}
+.cal-h{text-align:center;padding:8px 6px;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);font-weight:700;border-right:1px solid var(--line);background:#fafcfb}
+
+/* detail kegiatan */
+.det-hero{background:linear-gradient(135deg,var(--teal-800),var(--teal-600));color:#fff;border-radius:var(--radius);padding:22px 24px;margin-bottom:16px}
+.det-hero .k{font-size:.66rem;letter-spacing:.14em;opacity:.85;font-weight:700}
+.det-hero h2{font-size:1.3rem;margin:2px 0 8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.det-info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 22px;margin-top:14px;border-top:1px solid rgba(255,255,255,.18);padding-top:13px;font-size:.78rem}
+.det-info span{display:block;opacity:.75;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em}
+.det-info b{font-weight:600;font-size:.82rem}
+.tabs{display:flex;gap:3px;background:#e9efee;padding:4px;border-radius:12px;margin-bottom:16px;overflow-x:auto}
+.tab{padding:7px 14px;border-radius:9px;font-size:.8rem;font-weight:600;color:var(--tx2);white-space:nowrap}
+.tab:hover{color:var(--teal-800)}
+.tab.on{background:#fff;color:var(--teal-800);box-shadow:0 1px 4px rgba(15,60,55,.12)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:7px 14px;font-size:.84rem}
+.kv span{color:var(--tx3);font-size:.78rem}
+.score-pill{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:8px;background:var(--teal-100);color:var(--teal-800);font-weight:700;font-size:.8rem}
+.score-pill.s1{background:var(--red-bg);color:var(--red-tx)}.score-pill.s2{background:#ffedd5;color:#9a3412}
+.score-pill.s3{background:var(--amber-bg);color:var(--amber-tx)}.score-pill.s4{background:#d9f99d;color:#3f6212}
+.score-pill.s5{background:var(--green-bg);color:var(--green-tx)}
+.prio{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:.76rem}
+.prio i{width:9px;height:9px;border-radius:99px;display:inline-block}
+.prog{height:8px;background:#e6edeb;border-radius:99px;overflow:hidden;min-width:70px}
+.prog i{display:block;height:100%;border-radius:99px;background:var(--teal-500)}
+.timeline{position:relative;padding-left:20px}
+.timeline::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line)}
+.tl-item{position:relative;padding-bottom:14px;font-size:.82rem}
+.tl-item::before{content:"";position:absolute;left:-19px;top:5px;width:10px;height:10px;border-radius:99px;background:var(--teal-500);border:2px solid #fff;box-shadow:0 0 0 1.5px var(--teal-300)}
+.tl-item small{color:var(--tx3);display:block;font-size:.7rem}
+.qr-box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;display:inline-block}
+
+/* print */
+#printArea{display:none}
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{display:block;position:absolute;inset:0;padding:8mm;font-size:12pt;color:#000;background:#fff}
+  #printArea .p-title{text-align:center;font-size:14pt;font-weight:700;text-transform:uppercase}
+  #printArea .p-sub{text-align:center;font-size:11pt;margin-bottom:2mm}
+  #printArea hr{margin:4mm 0;border:none;border-top:1px solid #000}
+  #printArea table{width:100%;border-collapse:collapse;font-size:10.5pt}
+  #printArea th,#printArea td{border:1px solid #000;padding:2mm}
+  #printArea .sig{display:flex;justify-content:space-between;margin-top:14mm;font-size:11pt;text-align:center}
+  #printArea .sig div{width:40%}
+}
+
+/* responsive */
+@media(max-width:1280px){.stats{grid-template-columns:repeat(3,1fr)}.g5{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1024px){.g3,.g5{grid-template-columns:repeat(2,1fr)}.det-info{grid-template-columns:1fr 1fr}}
+@media(max-width:860px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .main{margin-left:0}
+  .burger{display:grid}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .g2,.g3,.g4,.g5{grid-template-columns:1fr}
+  .content{padding:16px 14px 40px}
+  .frow{grid-template-columns:1fr}
+  .det-info{grid-template-columns:1fr}
+  .userchip b,.userchip small{display:none}
+  .searchbox kbd{display:none}
+}
+@media(min-width:861px){.scrim{display:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ================= SETUP SCREEN ================= -->
+<div id="setupScr" class="auth" style="display:none">
+  <div class="auth-card setup-box">
+    <div class="auth-brand">
+      <div class="logo"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 3.5 9L15 9l1.5 3H21"/></svg></div>
+      <div><h1>PERSEPTOR</h1><small>Pembimbingan Klinik Terintegrasi</small></div>
+    </div>
+    <h2>Hubungkan ke Supabase</h2>
+    <p class="hint">Frontend ini dihosting statis (GitHub Pages) dan membutuhkan backend Supabase untuk penyimpanan data permanen.</p>
+    <ol>
+      <li>Buat proyek di <code>supabase.com</code> (gratis).</li>
+      <li>Buka <b>SQL Editor</b> → jalankan file <code>schema.sql</code> (disertakan dalam paket).</li>
+      <li>Salin <b>Project URL</b> dan <b>anon public key</b> dari Settings → API.</li>
+    </ol>
+    <div class="field"><label>Supabase Project URL</label><input id="cfgUrl" class="inp" placeholder="https://xxxx.supabase.co"></div>
+    <div class="field"><label>Anon Public Key</label><textarea id="cfgKey" class="inp" style="min-height:88px;font-family:monospace;font-size:.72rem" placeholder="eyJhbGciOi..."></textarea></div>
+    <div id="cfgErr" style="display:none" class="badge b-red" ></div>
+    <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-p" data-action="cfg-save">Simpan &amp; Hubungkan</button>
+      <button class="btn btn-o" data-action="cfg-demo">Coba Mode Demo</button>
+    </div>
+    <p class="auth-note">Mode Demo hanya untuk pratinjau — data disimpan di browser ini saja, bukan database permanen.</p>
+  </div>
+</div>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginScr" class="auth" style="display:none">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="logo"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 3.5 9L15 9l1.5 3H21"/></svg></div>
+      <div><h1>PERSEPTOR</h1><small>Dinas Kesehatan Kabupaten × Puskesmas</small></div>
+    </div>
+    <h2>Masuk ke Sistem</h2>
+    <p class="hint">Gunakan akun yang terdaftar di Supabase Authentication.</p>
+    <form id="loginForm" data-form="login">
+      <div class="field"><label>Email</label><input id="liEmail" name="email" type="email" class="inp" required autocomplete="username" placeholder="nama@dinkes.go.id"></div>
+      <div class="field"><label>Kata Sandi</label><input id="liPass" name="password" type="password" class="inp" required autocomplete="current-password" placeholder="••••••••"></div>
+      <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:6px">Masuk</button>
+    </form>
+    <div id="loginErr" style="display:none;margin-top:10px" ></div>
+    <div class="demo-list" id="demoList" style="display:none">
+      <p>Akun Demo (klik untuk masuk cepat)</p>
+      <button class="demo-btn" data-action="demo-login" data-email="superadmin@dinkes.go.id" data-pass="dinkes123" data-nama="Dra. Kartika Dewi, M.Si" data-role="SUPERADMIN_DINKES">
+        <span class="avatar" style="width:30px;height:30px;font-size:.62rem">KD</span>
+        <span><b>Dra. Kartika Dewi, M.Si</b><small>Superadmin Dinas Kesehatan · superadmin@dinkes.go.id</small></span></button>
+      <button class="demo-btn" data-action="demo-login" data-email="admin@dinkes.go.id" data-pass="dinkes123" data-nama="Rian Hidayat, S.KM" data-role="ADMIN_DINKES">
+        <span class="avatar" style="width:30px;height:30px;font-size:.62rem;background:var(--sky)">RH</span>
+        <span><b>Rian Hidayat, S.KM</b><small>Admin Dinas Kesehatan · admin@dinkes.go.id</small></span></button>
+      <button class="demo-btn" data-action="demo-login" data-email="ratna.widyaningrum@dinkes.go.id" data-pass="perseptor123" data-nama="Bidan Ratna Widyaningrum" data-role="PERSEPTOR">
+        <span class="avatar" style="width:30px;height:30px;font-size:.62rem;background:var(--violet)">RW</span>
+        <span><b>Bidan Ratna Widyaningrum</b><small>Perseptor / Pembimbing · ratna.widyaningrum@dinkes.go.id</small></span></button>
+      <button class="demo-btn" data-action="demo-login" data-email="admin.sukamaju@puskesmas.go.id" data-pass="puskes123" data-nama="Agus Wibowo, S.AP" data-role="ADMIN_PUSKESMAS">
+        <span class="avatar" style="width:30px;height:30px;font-size:.62rem;background:var(--amber)">AW</span>
+        <span><b>Agus Wibowo, S.AP</b><small>Admin Puskesmas Sukamaju · admin.sukamaju@puskesmas.go.id</small></span></button>
+      <button class="demo-btn" data-action="demo-login" data-email="budianto@puskesmas.go.id" data-pass="peserta123" data-nama="Budianto, A.Md.Kep" data-role="PESERTA">
+        <span class="avatar" style="width:30px;height:30px;font-size:.62rem;background:var(--green)">BU</span>
+        <span><b>Budianto, A.Md.Kep</b><small>Peserta / Tenaga Kesehatan · budianto@puskesmas.go.id</small></span></button>
+    </div>
+    <p class="auth-note" id="authFoot">PERSEPTOR — Mendampingi, Membina, Meningkatkan Mutu Pelayanan</p>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5eead4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 3.5 9L15 9l1.5 3H21"/></svg></div>
+      <div><h1>PERSEPTOR</h1><small>Pembimbingan Klinik Terintegrasi</small></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="nav-foot">“Mendampingi, Membina,<br>Meningkatkan Mutu Pelayanan.”<br><span id="navMode"></span></div>
+  </aside>
+  <div class="scrim" data-action="nav-close"></div>
+  <div class="main">
+    <header class="topbar">
+      <button class="burger" data-action="nav-open"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <div class="searchbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="gSearch" placeholder="Cari Puskesmas, perseptor, jadwal..." autocomplete="off">
+        <kbd>Ctrl K</kbd>
+        <div class="search-drop" id="gDrop"></div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" data-action="go-notif" title="Notifikasi">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="dot" id="notifDot" style="display:none">0</span>
+        </button>
+        <button class="userchip" data-action="user-menu">
+          <span class="avatar" id="uAva">--</span>
+          <span style="text-align:left"><b id="uNama">—</b><small id="uRole">—</small></span>
+        </button>
+      </div>
+    </header>
+    <main class="content" id="content"></main>
+    <footer class="footer">PERSEPTOR — Program Pembimbingan dan Supervisi Klinik Terintegrasi • Mendampingi, Membina, Meningkatkan Mutu Pelayanan</footer>
+  </div>
+</div>
+
+<div class="modal-scrim" id="modalScrim"><div class="modal" id="modalBox"></div></div>
+<div id="toasts"></div>
+<div id="printArea"></div>
+<script>
+/* =====================================================================
+   PERSEPTOR — Frontend statis untuk GitHub Pages + Backend Supabase
+   ===================================================================== */
+'use strict';
+
+/* >>> OPSIONAL: isi langsung kredensial Supabase di sini agar pengguna
+   tidak perlu memasukkannya lewat layar setup. Kosongkan jika ingin
+   memakai layar setup. <<< */
+const EMBEDDED_CONFIG = { url: '', anonKey: '' };
+
+const CFG_KEY = 'perseptor_cfg', SESSION_KEY = 'perseptor_demo_session';
+const CFG = (() => {
+  try { const s = JSON.parse(localStorage.getItem(CFG_KEY) || 'null'); if (s && s.url) return s; } catch (e) {}
+  if (EMBEDDED_CONFIG.url && EMBEDDED_CONFIG.anonKey) return { ...EMBEDDED_CONFIG };
+  return null;
+})();
+const IS_DEMO = () => APP.mode === 'demo';
+
+/* ---------- LABEL & OPSI (Bahasa Indonesia) ---------- */
+const ROLES = {
+  SUPERADMIN_DINKES: 'Superadmin Dinas Kesehatan', ADMIN_DINKES: 'Admin Dinas Kesehatan',
+  PERSEPTOR: 'Perseptor / Pembimbing', ADMIN_PUSKESMAS: 'Admin Puskesmas', PESERTA: 'Peserta / Tenaga Kesehatan'
+};
+const JADWAL_STATUS = {
+  DIRENCANAKAN:  { l: 'Direncanakan', c: 'b-gray'  }, DIJADWALKAN:  { l: 'Dijadwalkan',  c: 'b-sky'   },
+  DIKONFIRMASI:  { l: 'Dikonfirmasi', c: 'b-teal'  }, BERLANGSUNG:  { l: 'Berlangsung', c: 'b-violet'},
+  SELESAI:       { l: 'Selesai',      c: 'b-green' }, DITUNDA:      { l: 'Ditunda',     c: 'b-amber' },
+  DIBATALKAN:    { l: 'Dibatalkan',   c: 'b-red'   }
+};
+const FLOW_JADWAL = { DIRENCANAKAN: ['DIJADWALKAN','DIBATALKAN'], DIJADWALKAN: ['DIKONFIRMASI','DITUNDA','DIBATALKAN'],
+  DIKONFIRMASI: ['BERLANGSUNG','DITUNDA','DIBATALKAN'], BERLANGSUNG: ['SELESAI'], DITUNDA: ['DIJADWALKAN','DIBATALKAN'],
+  SELESAI: [], DIBATALKAN: [] };
+const RTL_STATUS = {
+  BELUM_DIMULAI: { l: 'Belum dimulai', c: 'b-gray'  }, DALAM_PROSES: { l: 'Dalam proses', c: 'b-amber' },
+  SELESAI:       { l: 'Selesai',      c: 'b-green' }, TERVERIFIKASI:{ l: 'Terverifikasi',c: 'b-teal' },
+  TERLAMBAT:     { l: 'Terlambat',    c: 'b-red'   }
+};
+const METODE = ['Observasi langsung','Demonstrasi','Redemonstrasi','Diskusi kasus','Bedside teaching','Coaching','Mentoring','Simulasi','Audit klinis','Review dokumentasi','Telaah SOP','Pendampingan tindakan','Konsultasi klinis'];
+const KATEGORI_TEMUAN = ['Keterampilan klinis','Dokumentasi & pencatatan','Keselamatan pasien','Pencegahan & Pengendalian Infeksi','Komunikasi & etika','Kepatuhan SOP','Manajemen obat & alat','Pelayanan gawat darurat','Kesehatan maternal & neonatal','Tata kelola & manajemen','Sarana & prasarana'];
+const ASPEK_PENILAIAN = ['Persiapan','SOP & standar layanan','Keselamatan pasien','Komunikasi terapeutik','Keterampilan teknis','Dokumentasi asuhan','Etika profesional','Penggunaan APD','Pencegahan & Pengendalian Infeksi','Ketepatan tindakan'];
+const SKALA = ['','1 — Belum mampu','2 — Kurang mampu','3 — Cukup mampu','4 — Mampu','5 — Sangat baik'];
+const PRIORITAS = { 1: { l: 'Rendah', c: 'b-gray', w: '#94a3b8' }, 2: { l: 'Sedang', c: 'b-sky', w: '#0ea5e9' },
+  3: { l: 'Tinggi', c: 'b-amber', w: '#f59e0b' }, 4: { l: 'Sangat Tinggi', c: 'b-red', w: '#ef4444' } };
+const PROFESI = ['Dokter Umum','Dokter Gigi','Bidan','Perawat','Nutritionis / Ahli Gizi','Apoteker','Sanitarian','Ahli Teknologi Laboratorium Medik'];
+const KATEGORI_KOMPETENSI = ['Kompetensi Klinis','Manajerial','Keselamatan Pasien','Pencegahan & Pengendalian Infeksi','Gawat Darurat','Maternal & Neonatal','Kesehatan Anak','Gizi','Farmasi','Laboratorium','Keperawatan','Kebidanan','Lainnya'];
+const JENIS_DOK = ['Foto kegiatan','Dokumen','Instrumen','Berita acara','Materi pembimbingan','Bukti RTL'];
+const RISIKO = { RENDAH: { l: 'Rendah', c: 'b-gray' }, SEDANG: { l: 'Sedang', c: 'b-amber' }, TINGGI: { l: 'Tinggi', c: 'b-red' } };
+const PROGRAM_STATUS = { RENCANA: { l: 'Rencana', c: 'b-gray' }, BERJALAN: { l: 'Berjalan', c: 'b-sky' }, SELESAI: { l: 'Selesai', c: 'b-green' } };
+const SVG = {
+  dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>',
+  map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 20-5.4-2.7a1 1 0 0 1-.6-.9V4a1 1 0 0 1 1.6-.9L9 5.6l6-2.6 5.4 2.7a1 1 0 0 1 .6.9V20a1 1 0 0 1-1.6.9L15 18.4Z"/><path d="M9 5.6v13M15 8v13"/></svg>',
+  prog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  run:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4v4l3 3v9l-4-2-4 2v-9l3-3V4Z"/><circle cx="13" cy="2.5" r="1"/></svg>',
+  hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></svg>',
+  people:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>',
+  bld:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4M9 9h.01M15 9h.01M9 13h.01M15 13h.01"/></svg>',
+  nurse:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l-1 4h-6Z"/><circle cx="12" cy="13" r="6"/><path d="M12 10.5v5M9.5 13h5"/></svg>',
+  cap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 9 10-5 10 5-10 5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>',
+  loop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
+  rep:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>',
+  folder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+  audit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+  pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  ok2:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="M22 4 12 14l-3-3"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>',
+  print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
+};
+
+/* ---------- MASTER KOMPETENSI (seed) ---------- */
+const SEED_KOMPETENSI = [
+  ['Penanganan Gawat Darurat Dasar (PPGD)','Gawat Darurat','Kemampuan penanganan kegawatdaruratan awal di fasilitas primer'],
+  ['Asuhan Kehamilan & Persalinan Normal (APN)','Maternal & Neonatal','Asuhan prenatal, intranatal, postnatal sesuai standar'],
+  ['Manajemen Pelayanan Neonatal Esensial','Maternal & Neonatal','Perawatan bayi baru lahir termasuk resusitasi neonatus'],
+  ['Tata Laksana Diabetes Melitus','Kompetensi Klinis','Screening, terapi, edukasi, dan rujukan DM tipe 2'],
+  ['Manajemen Hipertensi','Kompetensi Klinis','Deteksi dini dan tata laksana hipertensi berjenjang'],
+  ['Konseling Gizi Balita & Ibu','Gizi','Penilaian status gizi dan konseling 1000 HPK'],
+  ['Keselamatan Pasien (Patient Safety)','Keselamatan Pasien','Identifikasi pasien, komunikasi SBAR, pelaporan insiden'],
+  ['Pencegahan & Pengendalian Infeksi','Pencegahan & Pengendalian Infeksi','Hand hygiene, dekontaminasi, pengelolaan limfah'],
+  ['Keterampilan Pemasangan IV & Infus','Keperawatan','Teknis aseptik pemasangan dan perawatan infus'],
+  ['Manajemen Logistik Obat & HMIS','Farmasi','Perencanaan, pencatatan, dan pemantauan stok obat'],
+  ['Konseling Obat Rasional','Farmasi','Penggunaan obat rasional dan edukasi kepatuhan'],
+  ['Spesimen & Pemeriksaan Lab Dasar','Laboratorium','Pengambilan, penanganan, dan tata baca spesimen'],
+  ['Deteksi Dini Stunting & PMT','Gizi','Skrining stunting dan pengelolaan pemberian makanan tambahan'],
+  ['Supervisi Klinis & Pembimbingan','Manajerial','Teknik supervisi klinis, umpan balik konstruktif, dokumentasi']
+];
+
+/* ---------- SEED DEMO (Mode Demo / pratinjau) ---------- */
+function demoDataset(){
+  const uid = (() => { let i = 0; return p => p + '-' + (++i).toString(36).padStart(4,'0'); })();
+  const P = [
+    ['PKM-01','Puskesmas Sukamaju','Sukamaju','Jl. Raya Sukamaju No. 12','dr. Siti Nurhaliza, M.Kes','0812-3456-7801','pkm.sukamaju@puskesmas.go.id'],
+    ['PKM-02','Puskesmas Cempaka','Cempaka','Jl. Cempaka Raya No. 45','dr. Bambang Sutrisno','0812-3456-7802','pkm.cempaka@puskesmas.go.id'],
+    ['PKM-03','Puskesmas Melati','Melati','Jl. Melati Indah No. 8','dr. Lestari Handayani','0812-3456-7803','pkm.melati@puskesmas.go.id'],
+    ['PKM-04','Puskesmas Anggrek','Anggrek','Jl. Anggrek No. 90','dr. Prasetyo Adi','0812-3456-7804','pkm.anggrek@puskesmas.go.id'],
+    ['PKM-05','Puskesmas Kenanga','Kenanga','Jl. Kenanga No. 3','dr. Maya Puspita','0812-3456-7805','pkm.kenanga@puskesmas.go.id'],
+    ['PKM-06','Puskesmas Bougenville','Bougenville','Jl. Bougenville No. 27','dr. Hendra Gunawan','0812-3456-7806','pkm.bougenville@puskesmas.go.id'],
+    ['PKM-07','Puskesmas Teratai','Teratai','Jl. Teratai No. 15','dr. Dewi Anggraini','0812-3456-7807','pkm.teratai@puskesmas.go.id'],
+    ['PKM-08','Puskesmas Mawar','Mawar','Jl. Mawar No. 33','dr. Fajar Ramadhan','0812-3456-7808','pkm.mawar@puskesmas.go.id']
+  ].map(x => ({ id: uid('pkm'), kode: x[0], nama: x[1], kecamatan: x[2], alamat: x[3], kepala: x[4], kontak: x[5], email: x[6], status: 'AKTIF' }));
+  const K = SEED_KOMPETENSI.map(x => ({ id: uid('kom'), nama: x[0], kategori: x[1], deskripsi: x[2] }));
+  const PRS = [
+    ['dr. Ratna Widyaningrum, Sp.PD','198504122010012004','Dokter Umum','Koordinator Pembimbingan Klinik','Dinas Kesehatan Kabupaten','Tata laksana DM, hipertensi, PPGD', 4],
+    ['Bidan Sari Mulyani, A.Md.Keb','198709202011012008','Bidan','Penyelia Kebidanan','Dinas Kesehatan Kabupaten','APN, neonatal esensial, konseling', 4],
+    ['Ns. Budi Santoso, S.Kep','199001152015011003','Perawat','Penyelia Keperawatan','Dinas Kesehatan Kabupaten','Keselamatan pasien, PPI, IV line', 3],
+    ['dr. Hadi Prasetyo, M.Kes','198203302009011002','Dokter Umum','Kasubdivisi Mutu Pelayanan','Dinas Kesehatan Kabupaten','Audit klinis, telaah SOP, patient safety', 3],
+    ['Ami Rahmawati, S.Gz','199206102018012005','Nutritionis / Ahli Gizi','Pembimbing Gizi','Dinas Kesehatan Kabupaten','Konseling gizi balita, stunting, PMT', 2]
+  ].map(x => ({ id: uid('prs'), nama: x[0], nip: x[1], profesi: x[2], jabatan: x[3], unit_kerja: x[4], area_keahlian: x[5], str: 'STR ' + Math.floor(100000 + Math.random() * 899999), sip: 'SIP ' + Math.floor(100 + Math.random() * 899) + '/Dinkes/2025', sertifikat: 'Sertifikat pembimbing klinik 2025', kompetensi: x[5], status: 'AKTIF' }));
+  const TK = [
+    ['Budianto, A.Md.Kep','199205122019031004','Perawat','Perawat Poli Umum',0,'IKGN','2021-03-01'],
+    ['Sri Wahyuni, A.Md.Keb','199308202020012006','Bidan','Bidan Desa Sukamaju',0,'IKBI','2020-07-15'],
+    ['dr. Ayu Lestari','199604102021012009','Dokter Umum','Dokter PTT',0,'PDGI','2023-01-09'],
+    ['Nurul Aini, A.Md.Gz','199408222018012003','Nutritionis / Ahli Gizi','Ahli Gizi',1,'PPGI','2022-02-14'],
+    ['Dwi Santoso, A.Md.AK','199101172016011002','Ahli Teknologi Laboratorium Medik','Analis',1,'PATELKI','2021-09-01'],
+    ['Rina Marlina, A.Md.Kep','199509152020012004','Perawat','Kepala Ruang UGD',1,'IKGN','2022-05-20'],
+    ['Siti Aminah, A.Md.Keb','199701122021012002','Bidan','Bidan PMB',2,'IKBI','2023-03-13'],
+    ['Yusuf Maulana, A.Md.AK','199406222019011006','Apoteker','Apoteker',3,'IAI','2023-06-05'],
+    ['Endang Sutisna, A.Md.Kep','199002222018011005','Perawat','Perawat Maternitas',4,'IKGN','2021-11-02'],
+    ['Fitri Handayani, A.Md.Keb','199612202020012008','Bidan','Koordinator KIA-KB',4,'IKBI','2022-08-17']
+  ].map(x => ({ id: uid('tk'), nama: x[0], nip_nik: x[1], profesi: x[2], jabatan: x[3], puskesmas_id: P[x[4]].id, kompetensi: x[5], masa_kerja: 1 + Math.floor(Math.random() * 12), status: 'AKTIF' }));
+  const USR = [
+    { email:'superadmin@dinkes.go.id', nama:'Dra. Kartika Dewi, M.Si', role:'SUPERADMIN_DINKES' },
+    { email:'admin@dinkes.go.id', nama:'Rian Hidayat, S.KM', role:'ADMIN_DINKES' },
+    { email:'ratna.widyaningrum@dinkes.go.id', nama:'dr. Ratna Widyaningrum, Sp.PD', role:'PERSEPTOR', perseptor_id: PRS[0].id },
+    { email:'sari.mulyani@dinkes.go.id', nama:'Bidan Sari Mulyani, A.Md.Keb', role:'PERSEPTOR', perseptor_id: PRS[1].id },
+    { email:'admin.sukamaju@puskesmas.go.id', nama:'Agus Wibowo, S.AP', role:'ADMIN_PUSKESMAS', puskesmas_id: P[0].id },
+    { email:'admin.cempaka@puskesmas.go.id', nama:'Rina Safitri, S.ST', role:'ADMIN_PUSKESMAS', puskesmas_id: P[1].id },
+    { email:'budianto@puskesmas.go.id', nama:'Budianto, A.Md.Kep', role:'PESERTA', tenaga_id: TK[0].id, puskesmas_id: P[0].id },
+    { email:'sriwahyuni@puskesmas.go.id', nama:'Sri Wahyuni, A.Md.Keb', role:'PESERTA', tenaga_id: TK[1].id, puskesmas_id: P[0].id }
+  ].map(u => ({ id: uid('usr'), aktif: true, ...u }));
+  const now = new Date(); const iso = d => d.toISOString().slice(0, 10);
+  const PM = [];
+  [[0,0,6,4],[0,1,3,3],[1,2,7,3],[2,0,12,2],[3,3,8,4],[4,4,5,3],[5,5,13,2],[6,6,9,3],[7,2,4,4],[2,4,1,2]]
+    .forEach(x => PM.push({ id: uid('pm'), tahun: 2026, puskesmas_id: P[x[0]].id, tenaga_id: TK[x[1]].id, kompetensi_id: K[x[2]].id, skor: x[3], tingkat: PRIORITAS[x[3]].l.toUpperCase(), catatan: 'Hasil pemetaan kebutuhan pembinaan tahun 2026.', status: 'AKTIF', created_at: iso(new Date(2026, 0, 5 + PM.length)) }));
+  const PRO = [
+    ['Pembimbingan Berbasis Kasus: Preeklampsia','Diskusi kasus terstruktur preeklampsia berat untuk bidan & perawat maternitas.',0,'BERJALAN'],
+    ['Audit Klinis Diabetes Melitus','Audit klinis bertahap tata laksana DM tipe 2 seluruh Puskesmas.',1,'BERJALAN'],
+    ['Penguatan Keselamatan Pasien','Pembinaan 7 langkah keselamatan pasien & komunikasi SBAR.',2,'RENCANA']
+  ].map((x, i) => ({ id: uid('pro'), nama: x[0], deskripsi: x[1], tahun: 2026, status: x[2 + 1] || x[3], mulai: iso(new Date(2026, i + 1, 1)), selesai: iso(new Date(2026, i + 5, 28)), created_at: iso(new Date(2026, 0, 20)) }));
+  const JD = [];
+  const mkJadwal = (m, d, pkm, prs, judul, met, st, prog) => { const dt = new Date(2026, m, d); if (st === 'DIRENCANAKAN' || st === 'DIJADWALKAN' || st === 'DIKONFIRMASI' || st === 'DITUNDA' || st === 'DIBATALKAN') { if (dt < now && st !== 'DIBATALKAN' && st !== 'DITUNDA') return null; } JD.push({ id: uid('jd'), program_id: PRO[prog].id, puskesmas_id: P[pkm].id, perseptor_id: PRS[prs].id, judul, tanggal: iso(dt), jam_mulai: '08:30', jam_selesai: '11:30', lokasi: 'Ruang ' + (met.includes('Observasi') ? 'Pelayanan' : 'Rapat') + ' ' + P[pkm].nama.replace('Puskesmas ', ''), metode: met, status: st, catatan: '', created_at: iso(new Date(2026, m > 0 ? m - 1 : 0, 12)) }); return JD[JD.length - 1]; };
+  mkJadwal(1,10,0,0,'Pendampingan Tindakan: Manajemen DM Tipe 2','Pendampingan tindakan','SELESAI',1);
+  mkJadwal(1,17,1,1,'Asuhan Persalinan Normal: Simulasi PPGD Obstetri','Simulasi','SELESAI',0);
+  mkJadwal(2,3,2,2,'Observasi Langsung: Hand Hygiene 5 Momen','Observasi langsung','SELESAI',2);
+  mkJadwal(2,12,3,0,'Audit Klinis DM: Review Berkas Rawat Jalan','Audit klinis','SELESAI',1);
+  mkJadwal(3,7,4,3,'Telaah SOP Pelayanan Gawat Darurat','Telaah SOP','SELESAI',2);
+  mkJadwal(4,14,5,1,'Diskusi Kasus Preeklampsia Berat #1','Diskusi kasus','SELESAI',0);
+  mkJadwal(5,5,6,2,'Coaching Komunikasi SBAR','Coaching','SELESAI',2);
+  mkJadwal(5,19,7,0,'Konsultasi Klinis: Gagal Ginjal Kronik','Konsultasi klinis','SELESAI',1);
+  mkJadwal(6,9,0,4,'Konseling Gizi Balita: Demontrasi & Redemonstrasi','Demonstrasi','SELESAI',2);
+  mkJadwal(6,23,1,1,'Redemonstrasi Resusitasi Neonatus','Redemonstrasi','SELESAI',0);
+  mkJadwal(7,7,2,3,'Mentoring Kepemimpinan Klinis Kepala Ruang','Mentoring','SELESAI',2);
+  mkJadwal(7,21,3,0,'Bedside Teaching: Pemeriksaan Kaki Diabetik','Bedside teaching','SELESAI',1);
+  mkJadwal(8,4,4,2,'Review Dokumentasi Asuhan Keperawatan','Review dokumentasi','SELESAI',2);
+  mkJadwal(8,18,5,1,'Diskusi Kasus Preeklampsia Berat #2','Diskusi kasus','SELESAI',0);
+  mkJadwal(9,1,6,0,'Audit Klinis DM Siklus 2','Audit klinis','SELESAI',1);
+  mkJadwal(9,8,0,1,'Konseling Pemberian MP-ASI','Demonstrasi','DIKONFIRMASI',0);
+  mkJadwal(9,15,1,3,'Keselamatan Pasien: Verifikasi Identifikasi','Observasi langsung','DIJADWALKAN',2);
+  mkJadwal(9,24,2,2,'Telaah SOP Pelayanan Poli Umum','Telaah SOP','DIJADWALKAN',2);
+  mkJadwal(10,6,3,0,'Pendampingan Tindakan Perawatan Luka','Pendampingan tindakan','DIJADWALKAN',1);
+  mkJadwal(10,13,4,1,'Simulasi Kegawatdaruratan Eklampsia','Simulasi','DIRENCANAKAN',0);
+  const PS = JD.filter(Boolean).map(j => (TK.filter(t => t.puskesmas_id === j.puskesmas_id).slice(0, 2).map(t => ({ id: uid('pes'), jadwal_id: j.id, tenaga_id: t.id, hadir: j.status === 'SELESAI' ? 'HADIR' : 'MENUNGGU', catatan: '' })))).flat();
+  const NIL = []; const KAS = []; const TEM = []; const REK = []; const RTL = []; const VER = []; const EV = []; const BA = [];
+  const done = JD.filter(j => j.status === 'SELESAI');
+  done.forEach((j, idx) => {
+    const pes = PS.filter(p => p.jadwal_id === j.id);
+    pes.forEach(p => { ASPEK_PENILAIAN.forEach((a, ai) => { const sk = 2 + ((idx + ai) % 4); NIL.push({ id: uid('nil'), jadwal_id: j.id, tenaga_id: p.tenaga_id, kategori: ai < 1 ? 'PERSIAPAN' : 'OBSERVASI', aspek: a, skor: sk, catatan: sk < 4 ? 'Perlu penguatan pada ' + a.toLowerCase() + '.' : 'Baik, sesuai standar.', created_at: j.tanggal }); }); EV.push({ id: uid('ev'), tenaga_id: p.tenaga_id, kompetensi_id: K[(idx + 1) % K.length].id, jadwal_id: j.id, tahap: 'EVALUASI', skor: Math.min(5, 3 + (idx % 3)), tanggal: j.tanggal, catatan: 'Skor pasca pembimbingan.' }); });
+    if (idx % 2 === 0) KAS.push({ id: uid('kas'), jadwal_id: j.id, kode_anonim: 'KAS-' + String(idx + 1).padStart(3, '0'), usia: 25 + (idx * 7) % 40, jenis_kelamin: idx % 2 ? 'L' : 'P', diagnosis: ['Preeklampsia berat','DM tipe 2 tidak terkontrol','Infeksi saluran napas','Gagal ginjal kronik'][idx % 4], tindakan: ['Rujukan terencana','Penyesuaian terapi & edukasi','Terapi suportif','Evaluasi program'][idx % 4], hasil: ['Pasien dirujuk, kondisi membaik','Kontrol ulang, gula darah membaik','Sembuh total','Rencana dialisis dikoordinasikan'][idx % 4], pembahasan: 'Pembahasan fokus pada ketepatan asesmen awal, kepatuhan SOP rujukan, dan dokumentasi klinis.', created_at: j.tanggal });
+    if (idx % 3 !== 2) { const kt = KATEGORI_TEMUAN[idx % KATEGORI_TEMUAN.length]; TEM.push({ id: uid('tem'), jadwal_id: j.id, kategori: kt, uraian: 'Temuan supervisi: ' + kt.toLowerCase() + ' belum sepenuhnya sesuai standar pada ' + j.judul.toLowerCase() + '.', risiko: idx % 4 === 0 ? 'TINGGI' : (idx % 4 === 1 ? 'SEDANG' : 'RENDAH'), bukti: 'Catatan observasi instrumen penilaian.', rekomendasi: 'Pembinaan internal dan redemonstrasi terkait ' + kt.toLowerCase() + '.', penanggung_jawab: 'Kepala ' + P.find(p => p.id === j.puskesmas_id).nama.replace('Puskesmas ', 'Puskesmas '), batas_waktu: iso(new Date(2026, 9, 2 + idx)), status: 'DITINDAKLANJUTI' }); }
+    const t0 = TEM[TEM.length - 1]; if (t0 && idx % 3 !== 2) REK.push({ id: uid('rek'), jadwal_id: j.id, masalah: ktMasalah(idx), akar_masalah: 'Pembinaan internal belum rutin dan SOP belum ditelaah ulang.', isi: 'Susun jadwal pembinaan internal + redemonstrasi; telaah & tempel ulang SOP terkait.', penanggung_jawab: 'Kepala Puskesmas', target: iso(new Date(2026, 9, 12 + idx)), indikator: '100% tenaga terbina & SOP diperbarui', status: 'BERJALAN' });
+  });
+  function ktMasalah(i){ return ['Asesmen awal belum lengkap','Dokumentasi belum terstruktur','Praktik belum konsisten dengan SOP','Komunikasi antar tim belum SBAR'][i % 4]; }
+  TEM.forEach((t, i) => { const st = i % 4 === 0 ? 'TERVERIFIKASI' : i % 4 === 1 ? 'DALAM_PROSES' : i % 4 === 2 ? 'SELESAI' : 'BELUM_DIMULAI'; const r = RTL.length; RTL.push({ id: uid('rtl'), temuan_id: t.id, rekomendasi_id: REK[i] ? REK[i].id : null, jadwal_id: t.jadwal_id, judul: t.rekomendasi, deskripsi: 'Tindak lanjut atas temuan: ' + t.uraian, penanggung_jawab: t.penanggung_jawab, batas_waktu: t.batas_waktu, status: st, bukti: st === 'BELUM_DIMULAI' ? '' : 'Foto kegiatan pembinaan internal & nota dinas SOP.', catatan: '', created_at: t.batas_waktu }); if (st === 'TERVERIFIKASI') VER.push({ id: uid('ver'), rtl_id: RTL[r].id, verifier: 'dr. Ratna Widyaningrum, Sp.PD', keputusan: 'DISETUJUI', catatan: 'Bukti tindak lanjut lengkap dan sesuai rekomendasi.', created_at: iso(new Date(2026, 9, 2 + i)) }); });
+  done.slice(0, 5).forEach((j, i) => BA.push({ id: uid('ba'), jadwal_id: j.id, nomor: 'BA-' + String(400 + i) + '/PERSEPTOR/DKK/' + (i + 3) + '/2026', isi: '', status: 'FINAL', created_by: USR[2].id, created_at: j.tanggal }));
+  const NT = [{ id: uid('nt'), user_email: 'all', judul: 'Jadwal baru: Konseling Pemberian MP-ASI', pesan: 'Kegiatan dijadwalkan 8 Sep 2026 di Puskesmas Sukamaju.', tipe: 'INFO', link: 'jadwal', dibaca: false, created_at: iso(now) }, { id: uid('nt'), user_email: 'all', judul: 'RTL terlambat', pesan: 'Beberapa RTL melewati batas waktu 2 Okt 2026.', tipe: 'PERINGATAN', link: 'rtl', dibaca: false, created_at: iso(now) }];
+  const AL = [{ id: uid('al'), user_nama: 'Dra. Kartika Dewi, M.Si', aksi: 'SEED', entitas: 'sistem', entitas_id: '-', data_baru: 'Data awal demo dimuat', created_at: iso(now) }];
+  return { users: USR, puskesmas: P, kompetensi: K, perseptor: PRS, tenaga_kesehatan: TK, pemetaan: PM, program: PRO, jadwal: JD, peserta: PS, penilaian: NIL, kasus: KAS, temuan: TEM, rekomendasi: REK, rtl: RTL, verifikasi_rtl: VER, evaluasi: EV, berita_acara: BA, dokumentasi: [], notifikasi: NT, audit_log: AL };
+}
+</script>
+<script>
+/* ================= UTIL ================= */
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dID = (d, opt) => d ? new Date(d).toLocaleDateString('id-ID', opt || { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const dISO = d => { const x = new Date(d); return new Date(x.getTime() - x.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const today = () => dISO(new Date());
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxx-xxxx-xxxx'.replace(/x/g, () => Math.floor(Math.random() * 16).toString(16)));
+const initials = n => (n || '?').replace(/(dr\.|Ns\.|Bidan|A\.Md\.[A-Za-z]*|S\.[A-Za-z]*|M\.[A-Za-z]*|Sp\.[A-Za-z]*)/g, ' ').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+function toast(msg, type) { const t = document.createElement('div'); t.className = 'toast' + (type === 'err' ? ' err' : ''); t.innerHTML = (type === 'err' ? SVG.x : SVG.check) + '<span>' + esc(msg) + '</span>'; $('#toasts').appendChild(t); setTimeout(() => { t.style.opacity = '0'; t.style.transition = '.3s'; setTimeout(() => t.remove(), 320); }, 3400); }
+function showErr(el, msg) { const e = $(el); if (!e) return; e.style.display = 'inline-block'; e.className = 'badge b-red'; e.textContent = msg; }
+function modal(title, bodyHtml, footHtml, wide) { $('#modalBox').className = 'modal' + (wide ? ' wide' : ''); $('#modalBox').innerHTML = '<div class="modal-h"><h3>' + title + '</h3><button class="icon-btn" data-action="modal-close">' + SVG.x + '</button></div><div class="modal-b">' + bodyHtml + '</div>' + (footHtml ? '<div class="modal-f">' + footHtml + '</div>' : ''); $('#modalScrim').classList.add('on'); }
+function closeModal() { $('#modalScrim').classList.remove('on'); setTimeout(() => { if (!$('#modalScrim').classList.contains('on')) $('#modalBox').innerHTML = ''; }, 200); }
+function confirmDlg(msg, onYes, danger) { modal('Konfirmasi', '<p style="font-size:.9rem">' + esc(msg) + '</p>', '<button class="btn ' + (danger ? 'btn-d' : 'btn-o') + '" data-action="modal-close">Batal</button><button class="btn ' + (danger ? 'btn-d' : 'btn-p') + '" id="cfYes">Ya, lanjutkan</button>'); $('#cfYes').onclick = () => { closeModal(); onYes(); }; }
+const badge = (map, v) => { const x = map[v]; return x ? '<span class="badge ' + x.c + '">' + x.l + '</span>' : '<span class="badge b-gray">' + esc(v || '—') + '</span>'; };
+const scorePill = s => '<span class="score-pill s' + s + '">' + s + '</span>';
+const progHtml = p => '<span style="display:inline-flex;align-items:center;gap:8px"><span class="prog"><i style="width:' + Math.round(p * 100) + '%"></i></span><b style="font-size:.76rem">' + Math.round(p * 100) + '%</b></span>';
+function csvDownload(name, rows) { const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(';')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })); a.download = name; a.click(); }
+function printHTML(html) { $('#printArea').innerHTML = html; setTimeout(() => window.print(), 60); }
+
+/* ================= BACKEND: SUPABASE ================= */
+const SupaBackend = {
+  sb: null,
+  init(url, key) { this.sb = supabase.createClient(url, key); },
+  async login(email, pass) { const { error } = await this.sb.auth.signInWithPassword({ email, password: pass }); if (error) throw error; const { data: u } = await this.sb.from('users').select('*').eq('email', email).maybeSingle(); if (!u) { await this.sb.auth.signOut(); throw new Error('Profil pengguna tidak ditemukan di tabel users. Hubungi superadmin.'); } return u; },
+  async me() { const { data: { session } } = await this.sb.auth.getSession(); if (!session) return null; const { data: u } = await this.sb.from('users').select('*').eq('email', session.user.email).maybeSingle(); return u || null; },
+  async logout() { await this.sb.auth.signOut(); },
+  async list(t, f) { let q = this.sb.from(t).select('*'); if (f) for (const k in f) q = q.eq(k, f[k]); const { data, error } = await q; if (error) throw error; return data || []; },
+  async insert(t, row) { const r = { ...row, id: uuid(), created_at: row.created_at || new Date().toISOString() }; const { data, error } = await this.sb.from(t).insert(r).select().single(); if (error) throw error; return data; },
+  async update(t, id, patch) { const { data, error } = await this.sb.from(t).update(patch).eq('id', id).select().single(); if (error) throw error; return data; },
+  async remove(t, id) { const { error } = await this.sb.from(t).delete().eq('id', id); if (error) throw error; },
+  async upload(file, name) { const { error } = await this.sb.storage.from('dokumentasi').upload(name, file, { upsert: true }); if (error) throw error; const { data } = this.sb.storage.from('dokumentasi').getPublicUrl(name); return data.publicUrl; },
+  async createUserRow(row) { return this.insert('users', row); }
+};
+/* ================= BACKEND: DEMO (localStorage, pratinjau saja) ================= */
+const DemoBackend = {
+  data: null,
+  _save() { localStorage.setItem('perseptor_demo_db', JSON.stringify(this.data)); },
+  init() { const raw = localStorage.getItem('perseptor_demo_db'); if (raw) { try { this.data = JSON.parse(raw); return; } catch (e) {} } this.data = demoDataset(); this._save(); },
+  seed() { this.data = demoDataset(); this._save(); },
+  _scoping(rows) { const u = APP.session; if (!u) return rows; if (['SUPERADMIN_DINKES', 'ADMIN_DINKES'].includes(u.role)) return rows; if (u.role === 'ADMIN_PUSKESMAS') { if (rows[0] && 'puskesmas_id' in rows[0]) return rows.filter(r => r.puskesmas_id === u.puskesmas_id); return rows; } if (u.role === 'PERSEPTOR') { if (rows[0] && 'perseptor_id' in rows[0]) return rows.filter(r => r.perseptor_id === u.perseptor_id); return rows; } if (u.role === 'PESERTA') { if (rows[0] && 'tenaga_id' in rows[0]) return rows.filter(r => r.tenaga_id === u.tenaga_id); if (rows[0] && 'puskesmas_id' in rows[0]) return rows.filter(r => r.puskesmas_id === u.puskesmas_id); return rows; } return rows; },
+  async login(email, pass) { const u = this.data.users.find(x => x.email === email); if (!u || pass.length < 6) throw new Error('Email atau kata sandi salah (min. 6 karakter).'); localStorage.setItem(SESSION_KEY, email); return u; },
+  async me() { const em = localStorage.getItem(SESSION_KEY); return em ? (this.data.users.find(x => x.email === em) || null) : null; },
+  async logout() { localStorage.removeItem(SESSION_KEY); },
+  async list(t, f) { let rows = (this.data[t] || []).slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))); if (['jadwal','temuan','rtl','pemetaan','penilaian','kasus','peserta','dokumentasi','berita_acara'].includes(t)) rows = this._scoping(rows); if (f) for (const k in f) rows = rows.filter(r => r[k] === f[k]); return rows; },
+  async insert(t, row) { const r = { id: uuid(), created_at: new Date().toISOString(), ...row }; this.data[t] = this.data[t] || []; this.data[t].unshift(r); this._save(); return r; },
+  async update(t, id, patch) { const i = this.data[t].findIndex(x => x.id === id); if (i < 0) throw new Error('Data tidak ditemukan'); this.data[t][i] = { ...this.data[t][i], ...patch }; this._save(); return this.data[t][i]; },
+  async remove(t, id) { this.data[t] = this.data[t].filter(x => x.id !== id); this._save(); },
+  async upload(file, name) { return new Promise(res => { const fr = new FileReader(); fr.onload = () => { this.data.dokfiles = this.data.dokfiles || {}; this.data.dokfiles[name] = { name: file.name, type: file.type, data: fr.result }; this._save(); res('demo://' + name); }; fr.readAsDataURL(file); }); },
+  fileUrl(name) { const f = (this.data.dokfiles || {})[name]; return f ? f.data : null; },
+  async createUserRow(row) { return this.insert('users', row); }
+};
+/* ================= FACADE ================= */
+const DB = {
+  get B() { return IS_DEMO() ? DemoBackend : SupaBackend; },
+  login: (e, p) => DB.B.login(e, p), me: () => DB.B.me(), logout: () => DB.B.logout(),
+  list: (t, f) => DB.B.list(t, f),
+  insert: async (t, r) => { const row = await DB.B.insert(t, r); APP.cache[t] = null; await audit('TAMBAH', t, row.id, null, r); return row; },
+  update: async (t, id, p, oldRow) => { const row = await DB.B.update(t, id, p); APP.cache[t] = null; await audit('UBAH', t, id, oldRow, p); return row; },
+  remove: async (t, id, oldRow) => { await DB.B.remove(t, id); APP.cache[t] = null; await audit('HAPUS', t, id, oldRow, null); },
+  upload: (f, n) => DB.B.upload(f, n),
+  createUserRow: r => DB.B.createUserRow(r)
+};
+async function audit(aksi, entitas, entitasId, lama, baru) {
+  try { await DB.B.insert('audit_log', { user_nama: APP.session ? APP.session.nama : '-', aksi, entitas, entitas_id: String(entitasId || '').slice(0, 40), data_lama: lama ? JSON.stringify(lama).slice(0, 400) : null, data_baru: baru ? JSON.stringify(baru).slice(0, 400) : null }); APP.cache.audit_log = null; } catch (e) {}
+}
+async function notify(judul, pesan, tipe, link) { try { const r = { user_email: 'all', judul, pesan, tipe: tipe || 'INFO', link: link || 'dashboard', dibaca: false }; if (IS_DEMO()) { await DemoBackend.insert('notifikasi', r); } else { await SupaBackend.insert('notifikasi', r); } APP.cache.notifikasi = null; } catch (e) {} }
+</script>
+<script>
+/* ================= APP CORE ================= */
+const APP = { mode: null, session: null, view: 'dashboard', params: {}, cache: {}, charts: [], filters: {} };
+const can = perm => {
+  const r = APP.session.role;
+  const P = {
+    manageMaster: ['SUPERADMIN_DINKES', 'ADMIN_DINKES'].includes(r),
+    manageUsers: r === 'SUPERADMIN_DINKES',
+    createPemetaan: ['SUPERADMIN_DINKES', 'ADMIN_DINKES'].includes(r),
+    createProgram: ['SUPERADMIN_DINKES', 'ADMIN_DINKES'].includes(r),
+    createJadwal: ['SUPERADMIN_DINKES', 'ADMIN_DINKES'].includes(r),
+    setStatus: ['SUPERADMIN_DINKES', 'ADMIN_DINKES', 'PERSEPTOR'].includes(r),
+    inputPenilaian: ['SUPERADMIN_DINKES', 'ADMIN_DINKES', 'PERSEPTOR'].includes(r),
+    createTemuan: ['SUPERADMIN_DINKES', 'ADMIN_DINKES', 'PERSEPTOR'].includes(r),
+    createRTL: ['SUPERADMIN_DINKES', 'ADMIN_DINKES', 'PERSEPTOR', 'ADMIN_PUSKESMAS'].includes(r),
+    verifRTL: ['SUPERADMIN_DINKES', 'ADMIN_DINKES', 'PERSEPTOR'].includes(r),
+    updateRTL: ['SUPERADMIN_DINKES', 'ADMIN_DINKES', 'PERSEPTOR', 'ADMIN_PUSKESMAS', 'PESERTA'].includes(r),
+    uploadDok: ['SUPERADMIN_DINKES', 'ADMIN_DINKES', 'PERSEPTOR', 'ADMIN_PUSKESMAS'].includes(r),
+    audit: ['SUPERADMIN_DINKES', 'ADMIN_DINKES'].includes(r),
+    users: r === 'SUPERADMIN_DINKES',
+    laporan: ['SUPERADMIN_DINKES', 'ADMIN_DINKES', 'PERSEPTOR', 'ADMIN_PUSKESMAS'].includes(r)
+  };
+  return !!P[perm];
+};
+const MENU = [
+  { g: 'Utama', items: [{ id: 'dashboard', l: 'Dashboard', ic: 'dash', roles: '*' }] },
+  { g: 'Pembimbingan', items: [
+    { id: 'pemetaan', l: 'Pemetaan', ic: 'map', roles: '*' },
+    { id: 'program', l: 'Program', ic: 'prog', roles: '*' },
+    { id: 'jadwal', l: 'Jadwal', ic: 'cal', roles: '*' },
+    { id: 'pelaksanaan', l: 'Pelaksanaan', ic: 'run', roles: '*' },
+    { id: 'riwayat', l: 'Riwayat', ic: 'hist', roles: '*' }] },
+  { g: 'Master Data', items: [
+    { id: 'master-puskesmas', l: 'Puskesmas', ic: 'bld', roles: '*' },
+    { id: 'master-perseptor', l: 'Perseptor', ic: 'people', roles: '*' },
+    { id: 'master-tenaga', l: 'Tenaga Kesehatan', ic: 'nurse', roles: '*' },
+    { id: 'master-kompetensi', l: 'Jenis Kompetensi', ic: 'cap', roles: '*' },
+    { id: 'master-users', l: 'Pengguna Sistem', ic: 'gear', roles: ['SUPERADMIN_DINKES'] }] },
+  { g: 'Operasional', items: [
+    { id: 'temuan', l: 'Temuan', ic: 'warn', roles: '*' },
+    { id: 'rtl', l: 'Tindak Lanjut', ic: 'loop', roles: '*' },
+    { id: 'laporan', l: 'Laporan', ic: 'rep', roles: ['SUPERADMIN_DINKES','ADMIN_DINKES','PERSEPTOR','ADMIN_PUSKESMAS'] },
+    { id: 'dokumentasi', l: 'Dokumentasi', ic: 'folder', roles: '*' }] },
+  { g: 'Sistem', items: [
+    { id: 'notifikasi', l: 'Notifikasi', ic: 'bell', roles: '*' },
+    { id: 'audit', l: 'Audit Trail', ic: 'audit', roles: ['SUPERADMIN_DINKES','ADMIN_DINKES'] }] }
+];
+function renderNav() {
+  $('#nav').innerHTML = MENU.map(g => {
+    const items = g.items.filter(i => i.roles === '*' || i.roles.includes(APP.session.role));
+    if (!items.length) return '';
+    return '<div class="nav-group">' + g.g + '</div>' + items.map(i => '<button class="nav-item' + (APP.view === i.id ? ' on' : '') + '" data-action="go" data-view="' + i.id + '">' + SVG[i.ic] + '<span>' + i.l + '</span></button>').join('');
+  }).join('');
+  $('#navMode').textContent = IS_DEMO() ? '⚠ Mode Demo (lokal)' : 'Terhubung Supabase';
+}
+async function go(view, params) {
+  APP.view = view; APP.params = params || {}; APP.charts.forEach(c => c.destroy()); APP.charts = [];
+  renderNav(); $('#sidebar').classList.remove('open');
+  $('#content').innerHTML = '<div style="display:grid;gap:12px;max-width:560px"><div class="sk" style="height:26px;width:38%"></div><div class="sk" style="height:90px"></div><div class="sk" style="height:220px"></div></div>';
+  window.scrollTo(0, 0);
+  try {
+    const V = { dashboard: vDashboard, pemetaan: vPemetaan, program: vProgram, jadwal: vJadwal, pelaksanaan: vPelaksanaan, riwayat: vRiwayat,
+      'master-puskesmas': () => vMaster('puskesmas'), 'master-perseptor': () => vMaster('perseptor'), 'master-tenaga': () => vMaster('tenaga_kesehatan'),
+      'master-kompetensi': () => vMaster('kompetensi'), 'master-users': () => vMaster('users'),
+      temuan: vTemuan, rtl: vRTL, laporan: vLaporan, dokumentasi: vDokumentasi, notifikasi: vNotifikasi, audit: vAudit, detail: vDetail };
+    await (V[view] || vDashboard)();
+  } catch (e) { console.error(e); $('#content').innerHTML = '<div class="card"><div class="empty">' + SVG.alert + '<b>Gagal memuat halaman</b><span>' + esc(e.message || e) + '</span></div></div>'; }
+  refreshNotifDot();
+}
+/* ---------- cache referensi ---------- */
+async function ref(table, force) {
+  if (force || !APP.cache[table]) {
+    if (IS_DEMO()) APP.cache[table] = DemoBackend.data[table] || [];
+    else APP.cache[table] = await SupaBackend.list(table);
+  }
+  return APP.cache[table];
+}
+const refPkm = async (id) => (await ref('puskesmas')).find(p => p.id === id);
+const refPrs = async (id) => (await ref('perseptor')).find(p => p.id === id);
+const refTk = async (id) => (await ref('tenaga_kesehatan')).find(p => p.id === id);
+const refKom = async (id) => (await ref('kompetensi')).find(p => p.id === id);
+const refProg = async (id) => (await ref('program')).find(p => p.id === id);
+/* ---------- notif dot ---------- */
+async function refreshNotifDot() {
+  try {
+    const list = await ref('notifikasi', true);
+    const mine = list.filter(n => !n.dibaca && (n.user_email === 'all' || n.user_email === (APP.session.email || '')));
+    const d = $('#notifDot'); d.style.display = mine.length ? 'grid' : 'none'; d.textContent = Math.min(mine.length, 9);
+  } catch (e) {}
+}
+/* ---------- ops table helpers ---------- */
+function opsCol(onView, onEdit, onDel) {
+  return '<td style="white-space:nowrap;text-align:right">' + (onView ? '<button class="icon-act" title="Detail" data-act="view" data-id="' + onView + '">' + SVG.eye + '</button>' : '') + (onEdit ? '<button class="icon-act" title="Ubah" data-act="edit" data-id="' + onEdit + '">' + SVG.pen + '</button>' : '') + (onDel ? '<button class="icon-act del" title="Hapus" data-act="del" data-id="' + onDel + '">' + SVG.trash + '</button>' : '') + '</td>';
+}
+function searchBox(id, placeholder) { return '<input id="' + id + '" class="inp" style="max-width:240px" placeholder="' + placeholder + '">'; }
+function emptyRow(cols, msg, sub) { return '<tr><td colspan="' + cols + '"><div class="empty">' + SVG.folder + '<b>' + msg + '</b><span>' + (sub || 'Belum ada data — tambahkan melalui tombol di atas.') + '</span></div></td></tr>'; }
+function field(label, inputHtml, req) { return '<div class="field"><label>' + label + (req ? ' <span class="req">*</span>' : '') + '</label>' + inputHtml + '</div>'; }
+function selHtml(name, opts, val, ph) { return '<select name="' + name + '" class="inp"><option value="">' + (ph || '— Pilih —') + '</option>' + opts.map(o => { const v = typeof o === 'string' ? o : o.v, l = typeof o === 'string' ? o : o.l; return '<option value="' + esc(v) + '"' + (String(val) === String(v) ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join('') + '</select>'; }
+function fd(form, name) { return (form.querySelector('[name="' + name + '"]') || {}).value?.trim() || ''; }
+</script>
+<script>
+/* ================= DASHBOARD ================= */
+async function vDashboard() {
+  const [pkm, prs, tk, jdw, rtlL, temL, nilL, kom] = await Promise.all([ref('puskesmas'), ref('perseptor'), ref('tenaga_kesehatan'), ref('jadwal'), ref('rtl'), ref('temuan'), ref('penilaian'), ref('kompetensi')]);
+  const f = APP.filters.dash = APP.filters.dash || { tahun: String(new Date().getFullYear()), bulan: '', pkm: '', prs: '', st: '' };
+  let J = jdw.slice();
+  const role = APP.session.role;
+  if (role === 'PERSEPTOR') J = J.filter(j => j.perseptor_id === APP.session.perseptor_id);
+  if (role === 'ADMIN_PUSKESMAS') { f.pkm = APP.session.puskesmas_id; }
+  if (f.tahun) J = J.filter(j => String(j.tanggal).startsWith(f.tahun));
+  if (f.bulan) J = J.filter(j => String(j.tanggal).slice(5, 7) === f.bulan);
+  if (f.pkm) J = J.filter(j => j.puskesmas_id === f.pkm);
+  if (f.prs) J = J.filter(j => j.perseptor_id === f.prs);
+  if (f.st) J = J.filter(j => j.status === f.st);
+  const jIds = new Set(J.map(j => j.id));
+  const rtlJ = rtlL.filter(r => jIds.has(r.jadwal_id)); const temJ = temL.filter(t => jIds.has(t.jadwal_id)); const nilJ = nilL.filter(n => jIds.has(n.jadwal_id));
+  const late = r => (r.batas_waktu < today() && ['BELUM_DIMULAI', 'DALAM_PROSES'].includes(r.status));
+  const rtlAktif = rtlJ.filter(r => ['BELUM_DIMULAI', 'DALAM_PROSES', 'TERLAMBAT'].includes(r.status || '')).length + rtlJ.filter(late).length;
+  const rtlSelesai = rtlJ.filter(r => ['SELESAI', 'TERVERIFIKASI'].includes(r.status)).length;
+  const persenRTL = (rtlJ.length) ? (rtlSelesai / rtlJ.length * 100) : 0;
+  const pkmCount = role === 'ADMIN_PUSKESMAS' ? 1 : (role === 'PESERTA' ? 1 : new Set(J.map(j => j.puskesmas_id)).size);
+  const prsCount = role === 'PERSEPTOR' ? 1 : new Set(J.map(j => j.perseptor_id)).size;
+  const tkCount = role === 'ADMIN_PUSKESMAS' ? tk.filter(t => t.puskesmas_id === APP.session.puskesmas_id).length : role === 'PESERTA' ? 1 : new Set(PS2(J)).size;
+  function PS2(list) { const s = new Set(); list.forEach(j => (j._pes || []).forEach(x => s.add(x))); tk.forEach(t => { if (J.some(j => j.puskesmas_id === t.puskesmas_id)) s.add(t.id); }); return s; }
+  const stat = (ic, v, l, sub, target) => '<button class="stat" ' + (target ? 'data-action="go" data-view="' + target + '"' : '') + '><span class="ic ic-' + ic.split('|')[0] + '">' + SVG[ic.split('|')[1]] + '</span><span><b>' + v + '</b><span>' + l + '</span>' + (sub ? '<small>' + sub + '</small>' : '') + '</span></button>';
+  const h = `
+  <div class="page-h"><div><h2>Selamat datang, ${esc(APP.session.nama.split(',')[0])}</h2><p>Ringkasan tata kelola pembimbingan dan supervisi klinik ${role.includes('DINKES') ? 'seluruh Puskesmas' : esc((await refPkm(APP.session.puskesmas_id) || {}).nama || '')}.</p></div></div>
+  <div class="filters">
+    <select data-f="tahun">${[new Date().getFullYear() + 1, new Date().getFullYear(), new Date().getFullYear() - 1, new Date().getFullYear() - 2].map(y => '<option' + (f.tahun === String(y) ? ' selected' : '') + '>' + y + '</option>').join('')}</select>
+    <select data-f="bulan"><option value="">Semua Bulan</option>${['01','02','03','04','05','06','07','08','09','10','11','12'].map(b => '<option value="' + b + '"' + (f.bulan === b ? ' selected' : '') + '>' + new Date(2026, b - 1, 1).toLocaleDateString('id-ID', { month: 'long' }) + '</option>').join('')}</select>
+    ${role !== 'ADMIN_PUSKESMAS' && role !== 'PESERTA' ? '<select data-f="pkm"><option value="">Semua Puskesmas</option>' + pkm.map(p => '<option value="' + p.id + '"' + (f.pkm === p.id ? ' selected' : '') + '>' + esc(p.nama) + '</option>').join('') + '</select>' : ''}
+    ${role !== 'PERSEPTOR' ? '<select data-f="prs"><option value="">Semua Perseptor</option>' + prs.map(p => '<option value="' + p.id + '"' + (f.prs === p.id ? ' selected' : '') + '>' + esc(p.nama) + '</option>').join('') + '</select>' : ''}
+    <select data-f="st"><option value="">Semua Status</option>${Object.entries(JADWAL_STATUS).map(([k, v]) => '<option value="' + k + '"' + (f.st === k ? ' selected' : '') + '>' + v.l + '</option>').join('')}</select>
+  </div>
+  <div class="stats">
+    ${stat('teal|bld', pkmCount, 'Total Puskesmas', '', 'master-puskesmas')}
+    ${stat('teal|people', prsCount, 'Total Perseptor', '', 'master-perseptor')}
+    ${stat('teal|nurse', tkCount, 'Tenaga Kesehatan', '', 'master-tenaga')}
+    ${stat('sky|cal', J.filter(j => ['DIJADWALKAN', 'DIKONFIRMASI', 'BERLANGSUNG'].includes(j.status)).length, 'Pembimbingan Terjadwal', J.filter(j => j.status === 'BERLANGSUNG').length + ' berlangsung', 'jadwal')}
+    ${stat('green|ok2', J.filter(j => j.status === 'SELESAI').length, 'Pembimbingan Selesai', '', 'riwayat')}
+    ${stat('amber|clock', J.filter(j => ['DIRENCANAKAN', 'DIJADWALKAN', 'DIKONFIRMASI'].includes(j.status) && j.tanggal < today()).length + J.filter(j => j.status === 'DIRENCANAKAN' && j.tanggal >= today()).length, 'Belum Dilaksanakan', '', 'jadwal')}
+    ${stat('teal|loop', rtlJ.length, 'Tindak Lanjut', rtlAktif + ' aktif', 'rtl')}
+    ${stat('green|ok2', rtlSelesai, 'Tindak Lanjut Selesai', '', 'rtl')}
+    ${stat('red|warn', temJ.filter(t => t.risiko === 'TINGGI').length, 'Temuan Prioritas', 'Risiko tinggi', 'temuan')}
+    ${stat('teal|clock', Math.round(persenRTL) + '%', 'Penyelesaian RTL', rtlSelesai + ' dari ' + rtlJ.length + ' RTL', 'rtl')}
+  </div>
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card"><div class="card-h"><h3>Pembimbingan per Bulan</h3></div><div class="card-b" style="height:280px"><canvas id="chBulan"></canvas></div></div>
+    <div class="card"><div class="card-h"><h3>Pembimbingan per Puskesmas</h3></div><div class="card-b" style="height:280px"><canvas id="chPkm"></canvas></div></div>
+  </div>
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card"><div class="card-h"><h3>Pembimbingan per Profesi</h3></div><div class="card-b" style="height:270px"><canvas id="chProf"></canvas></div></div>
+    <div class="card"><div class="card-h"><h3>Jenis Temuan</h3></div><div class="card-b" style="height:270px"><canvas id="chTem"></canvas></div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><h3>Status Tindak Lanjut (RTL)</h3></div><div class="card-b" style="height:270px"><canvas id="chRtl"></canvas></div></div>
+    <div class="card"><div class="card-h"><h3>Perkembangan Kompetensi (rata-rata skor)</h3></div><div class="card-b" style="height:270px"><canvas id="chKom"></canvas></div></div>
+  </div>`;
+  $('#content').innerHTML = h;
+  document.querySelectorAll('[data-f]').forEach(s => s.onchange = () => { f[s.dataset.f] = s.value; go('dashboard'); });
+  /* charts */
+  const teal = ['#0f766e', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4', '#0d9488', '#115e59', '#134e4a'];
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily; Chart.defaults.color = '#5b6f6b';
+  const BUL = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const perBulan = BUL.map((_, i) => J.filter(j => String(j.tanggal).slice(5, 7) === String(i + 1).padStart(2, '0')).length);
+  APP.charts.push(new Chart($('#chBulan'), { type: 'bar', data: { labels: BUL, datasets: [{ label: 'Kegiatan', data: perBulan, backgroundColor: '#14b8a6', borderRadius: 6 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } }));
+  const pk = [...new Set(J.map(j => j.puskesmas_id))];
+  const pkLabels = pk.map(id => (pkm.find(p => p.id === id) || {}).nama || '?');
+  APP.charts.push(new Chart($('#chPkm'), { type: 'bar', data: { labels: pkLabels, datasets: [{ label: 'Kegiatan', data: pk.map(id => J.filter(j => j.puskesmas_id === id).length), backgroundColor: '#0f766e', borderRadius: 6 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } } }));
+  const pesTkIds = new Set((await ref('peserta')).filter(p => jIds.has(p.jadwal_id)).map(p => p.tenaga_id));
+  const profCount = {}; PROFESI.forEach(p => profCount[p] = 0); tk.filter(t => pesTkIds.has(t.id)).forEach(t => profCount[t.profesi] = (profCount[t.profesi] || 0) + 1);
+  const profPairs = Object.entries(profCount).filter(x => x[1] > 0);
+  APP.charts.push(new Chart($('#chProf'), { type: 'pie', data: { labels: profPairs.map(x => x[0]), datasets: [{ data: profPairs.map(x => x[1]), backgroundColor: teal, borderWidth: 2 }] }, options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } }));
+  const temCount = {}; KATEGORI_TEMUAN.forEach(k => temCount[k] = 0); temJ.forEach(t => temCount[t.kategori] = (temCount[t.kategori] || 0) + 1);
+  const temPairs = Object.entries(temCount).filter(x => x[1] > 0);
+  APP.charts.push(new Chart($('#chTem'), { type: 'doughnut', data: { labels: temPairs.map(x => x[0]), datasets: [{ data: temPairs.map(x => x[1]), backgroundColor: ['#dc2626', '#d97706', '#059669', '#0284c7', '#7c3aed', '#db2777', '#65a30d', '#0f766e', '#f59e0b', '#2563eb', '#9333ea'], borderWidth: 2 }] }, options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: c => ' ' + c.label + ': ' + c.parsed } } } } }));
+  const rtlCounts = Object.keys(RTL_STATUS).map(k => rtlJ.filter(r => r.status === k).length);
+  APP.charts.push(new Chart($('#chRtl'), { type: 'bar', data: { labels: Object.values(RTL_STATUS).map(v => v.l), datasets: [{ label: 'RTL', data: rtlCounts, backgroundColor: ['#94a3b8', '#f59e0b', '#059669', '#0f766e', '#dc2626'], borderRadius: 6 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } }));
+  const evL = await ref('evaluasi'); const evJ = evL.filter(e => jIds.has(e.jadwal_id));
+  const byKom = {}; evJ.forEach(e => { (byKom[e.kompetensi_id] = byKom[e.kompetensi_id] || []).push(e.skor); });
+  const komLabels = Object.keys(byKom).slice(0, 8).map(id => (kom.find(k => k.id === id) || {}).nama || '?');
+  APP.charts.push(new Chart($('#chKom'), { type: 'line', data: { labels: komLabels, datasets: [{ label: 'Rata-rata skor', data: Object.values(byKom).slice(0, 8).map(a => +(a.reduce((s, x) => s + x, 0) / a.length).toFixed(2)), borderColor: '#0f766e', backgroundColor: 'rgba(20,184,166,.15)', fill: true, tension: .35, pointRadius: 4 }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 1, max: 5 } } } }));
+}
+</script>
+<script>
+/* ================= MASTER DATA (CRUD generik) ================= */
+const MCONF = {
+  puskesmas: { t: 'Puskesmas', perm: 'manageMaster', canView: () => true,
+    cols: ['Kode', 'Nama Puskesmas', 'Kecamatan', 'Kepala Puskesmas', 'Kontak', 'Status'],
+    row: p => [p.kode, '<b>' + esc(p.nama) + '</b>', esc(p.kecamatan), esc(p.kepala), esc(p.kontak), badge({ AKTIF: { l: 'Aktif', c: 'b-green' }, NONAKTIF: { l: 'Nonaktif', c: 'b-red' } }, p.status)], find: true,
+    form: p => field('Kode *', '<input name="kode" class="inp" required value="' + esc(p?.kode) + '" placeholder="PKM-01">') + field('Nama Puskesmas *', '<input name="nama" class="inp" required value="' + esc(p?.nama) + '">') + '<div class="frow">' + field('Kecamatan *', '<input name="kecamatan" class="inp" required value="' + esc(p?.kecamatan) + '">') + field('Status', selHtml('status', ['AKTIF', 'NONAKTIF'], p?.status || 'AKTIF')) + '</div>' + field('Alamat', '<textarea name="alamat" class="inp">' + esc(p?.alamat) + '</textarea>') + '<div class="frow">' + field('Kepala Puskesmas', '<input name="kepala" class="inp" value="' + esc(p?.kepala) + '">') + field('Kontak', '<input name="kontak" class="inp" value="' + esc(p?.kontak) + '" placeholder="08xx-xxxx-xxxx">') + '</div>' + field('Email', '<input name="email" type="email" class="inp" value="' + esc(p?.email) + '">'),
+    save: f => ({ kode: fd(f, 'kode'), nama: fd(f, 'nama'), kecamatan: fd(f, 'kecamatan'), status: fd(f, 'status'), alamat: fd(f, 'alamat'), kepala: fd(f, 'kepala'), kontak: fd(f, 'kontak'), email: fd(f, 'email') }),
+    validate: o => !o.kode || !o.nama || !o.kecamatan ? 'Kode, nama, dan kecamatan wajib diisi.' : null },
+  perseptor: { t: 'Perseptor / Pembimbing', perm: 'manageMaster', canView: () => true,
+    cols: ['Nama', 'NIP', 'Profesi', 'Jabatan', 'Area Keahlian', 'Status'],
+    row: p => ['<b>' + esc(p.nama) + '</b>', esc(p.nip), esc(p.profesi), esc(p.jabatan), '<span class="badge b-teal">' + esc(p.area_keahlian || '—') + '</span>', badge({ AKTIF: { l: 'Aktif', c: 'b-green' }, NONAKTIF: { l: 'Nonaktif', c: 'b-red' } }, p.status)], find: true,
+    form: p => field('Nama Lengkap & Gelar *', '<input name="nama" class="inp" required value="' + esc(p?.nama) + '">') + '<div class="frow">' + field('NIP', '<input name="nip" class="inp" value="' + esc(p?.nip) + '">') + field('Profesi *', selHtml('profesi', PROFESI, p?.profesi)) + '</div><div class="frow">' + field('Jabatan', '<input name="jabatan" class="inp" value="' + esc(p?.jabatan) + '">') + field('Unit Kerja', '<input name="unit_kerja" class="inp" value="' + esc(p?.unit_kerja) + '">') + '</div>' + field('Area Keahlian / Kompetensi', '<input name="area_keahlian" class="inp" value="' + esc(p?.area_keahlian) + '" placeholder="mis. Tata laksana DM, APN, PPGD">') + '<div class="frow">' + field('No. STR', '<input name="str" class="inp" value="' + esc(p?.str) + '">') + field('No. SIP', '<input name="sip" class="inp" value="' + esc(p?.sip) + '">') + '</div><div class="frow">' + field('Sertifikat', '<input name="sertifikat" class="inp" value="' + esc(p?.sertifikat) + '">') + field('Status', selHtml('status', ['AKTIF', 'NONAKTIF'], p?.status || 'AKTIF')) + '</div>',
+    save: f => ({ nama: fd(f, 'nama'), nip: fd(f, 'nip'), profesi: fd(f, 'profesi'), jabatan: fd(f, 'jabatan'), unit_kerja: fd(f, 'unit_kerja'), area_keahlian: fd(f, 'area_keahlian'), str: fd(f, 'str'), sip: fd(f, 'sip'), sertifikat: fd(f, 'sertifikat'), status: fd(f, 'status') }),
+    validate: o => !o.nama || !o.profesi ? 'Nama dan profesi wajib diisi.' : null },
+  tenaga_kesehatan: { t: 'Tenaga Kesehatan', perm: 'manageMaster', canView: () => true,
+    cols: ['Nama', 'NIP / NIK', 'Profesi', 'Jabatan', 'Puskesmas', 'Status'],
+    row: (p, pkm) => ['<b>' + esc(p.nama) + '</b>', esc(p.nip_nik), esc(p.profesi), esc(p.jabatan), esc((pkm.find(x => x.id === p.puskesmas_id) || {}).nama || '—'), badge({ AKTIF: { l: 'Aktif', c: 'b-green' }, NONAKTIF: { l: 'Nonaktif', c: 'b-red' } }, p.status)], find: true,
+    scopeIns: true,
+    form: (p, ctx) => field('Nama Lengkap & Gelar *', '<input name="nama" class="inp" required value="' + esc(p?.nama) + '">') + '<div class="frow">' + field('NIP / NIK', '<input name="nip_nik" class="inp" value="' + esc(p?.nip_nik) + '">') + field('Profesi *', selHtml('profesi', PROFESI, p?.profesi)) + '</div><div class="frow">' + field('Jabatan', '<input name="jabatan" class="inp" value="' + esc(p?.jabatan) + '">') + field('Puskesmas *', selHtml('puskesmas_id', ctx.pkm.map(x => ({ v: x.id, l: x.nama })), p?.puskesmas_id || ctx.forcedPkm)) + '</div><div class="frow">' + field('Masa Kerja (tahun)', '<input name="masa_kerja" type="number" min="0" class="inp" value="' + (p?.masa_kerja ?? '') + '">') + field('Status', selHtml('status', ['AKTIF', 'NONAKTIF'], p?.status || 'AKTIF')) + '</div>',
+    save: f => ({ nama: fd(f, 'nama'), nip_nik: fd(f, 'nip_nik'), profesi: fd(f, 'profesi'), jabatan: fd(f, 'jabatan'), puskesmas_id: fd(f, 'puskesmas_id'), masa_kerja: +fd(f, 'masa_kerja') || 0, status: fd(f, 'status') }),
+    validate: o => !o.nama || !o.profesi || !o.puskesmas_id ? 'Nama, profesi, dan Puskesmas wajib diisi.' : null },
+  kompetensi: { t: 'Jenis Kompetensi', perm: 'manageMaster', canView: () => true,
+    cols: ['Nama Kompetensi', 'Kategori', 'Deskripsi'],
+    row: p => ['<b>' + esc(p.nama) + '</b>', '<span class="badge b-violet">' + esc(p.kategori) + '</span>', '<span style="color:var(--tx2);font-size:.78rem">' + esc(p.deskripsi) + '</span>'],
+    form: p => field('Nama Kompetensi *', '<input name="nama" class="inp" required value="' + esc(p?.nama) + '">') + '<div class="frow">' + field('Kategori *', selHtml('kategori', KATEGORI_KOMPETENSI, p?.kategori)) + '</div>' + field('Deskripsi', '<textarea name="deskripsi" class="inp">' + esc(p?.deskripsi) + '</textarea>'),
+    save: f => ({ nama: fd(f, 'nama'), kategori: fd(f, 'kategori'), deskripsi: fd(f, 'deskripsi') }),
+    validate: o => !o.nama || !o.kategori ? 'Nama dan kategori wajib diisi.' : null },
+  users: { t: 'Pengguna Sistem', perm: 'users', canView: () => can('users'),
+    cols: ['Nama', 'Email', 'Peran', 'Puskesmas', 'Status'],
+    row: (p, pkm) => ['<b>' + esc(p.nama) + '</b>' + '<div style="font-size:.7rem;color:var(--tx3)">' + esc(p.email) + '</div>', esc(p.email), '<span class="badge b-teal">' + ROLES[p.role] + '</span>', esc((pkm.find(x => x.id === p.puskesmas_id) || {}).nama || '—'), badge({ 'true': { l: 'Aktif', c: 'b-green' } }, String(p.aktif !== false))],
+    form: p => field('Nama Lengkap *', '<input name="nama" class="inp" required value="' + esc(p?.nama) + '">') + '<div class="frow">' + field('Email *', '<input name="email" type="email" class="inp" required value="' + esc(p?.email) + '"' + (p ? ' readonly style="background:#f3f7f6"' : '') + '>') + field('Peran *', selHtml('role', Object.entries(ROLES).map(([v, l]) => ({ v, l })), p?.role)) + '</div><div class="frow">' + field('Puskesmas (jika peran Puskesmas/Peserta)', selHtml('puskesmas_id', APP.cache.puskesmas?.map(x => ({ v: x.id, l: x.nama })) || [], p?.puskesmas_id)) + field('Status', selHtml('aktif', [{ v: 'true', l: 'Aktif' }, { v: 'false', l: 'Nonaktif' }], String(p?.aktif !== false))) + '</div>' + (p ? '' : '<p style="font-size:.76rem;color:var(--tx2);background:var(--teal-50);padding:9px 12px;border-radius:9px">⚠ Di Supabase, buat juga akun Authentication (Authentication → Add user) dengan email yang sama agar dapat login. Di Mode Demo, sandi = 6 karakter bebas sesuai daftar akun demo.</p>'),
+    save: f => ({ nama: fd(f, 'nama'), email: fd(f, 'email'), role: fd(f, 'role'), puskesmas_id: fd(f, 'puskesmas_id') || null, aktif: fd(f, 'aktif') !== 'false' }),
+    validate: o => !o.nama || !o.email || !o.role ? 'Nama, email, dan peran wajib diisi.' : null }
+};
+async function vMaster(entity) {
+  const c = MCONF[entity];
+  if (!c.canView()) { $('#content').innerHTML = '<div class="card"><div class="empty">' + SVG.alert + '<b>Akses ditolak</b><span>Peran Anda tidak memiliki akses ke modul ini.</span></div></div>'; return; }
+  const data = await ref(entity, true);
+  const pkm = await ref('puskesmas');
+  let rows = data;
+  if (entity === 'tenaga_kesehatan' && APP.session.role === 'ADMIN_PUSKESMAS') rows = rows.filter(r => r.puskesmas_id === APP.session.puskesmas_id);
+  if (entity === 'puskesmas' && APP.session.puskesmas_id) rows = rows.filter(r => r.id === APP.session.puskesmas_id);
+  const canAdd = can(c.perm) || (entity === 'tenaga_kesehatan' && APP.session.role === 'ADMIN_PUSKESMAS') || (entity === 'kompetensi' && APP.session.role === 'SUPERADMIN_DINKES');
+  APP._master = { entity, rows, q: APP._master?.entity === entity ? APP._master.q : '' };
+  $('#content').innerHTML = `
+  <div class="page-h"><div><h2>${c.t}</h2><p>${entity === 'puskesmas' ? 'Data induk Puskesmas di wilayah kerja Dinas Kesehatan Kabupaten.' : entity === 'perseptor' ? 'Tenaga pembimbing/supervisor klinik beserta kualifikasi dan area keahliannya.' : entity === 'tenaga_kesehatan' ? 'Tenaga kesehatan peserta pembimbingan pada masing-masing Puskesmas.' : entity === 'kompetensi' ? 'Jenis kompetensi klinis dan manajerial yang dipetakan, dibina, dan dievaluasi.' : 'Manajemen akun dan peran pengguna sistem.'}</p></div>
+  <div class="sp">${c.form && canAdd ? '<button class="btn btn-p" data-action="m-add">' + SVG.plus + 'Tambah ' + c.t.split(' ')[0] + '</button>' : ''}</div></div>
+  <div class="card">
+    <div class="card-h"><h3>Daftar ${c.t}</h3><span class="badge b-teal">${rows.length} data</span>
+      ${c.find ? '<input id="mQ" class="inp" style="max-width:230px;margin-left:auto" placeholder="Cari..." value="' + esc(APP._master.q) + '">' : ''}</div>
+    <div class="tbl-wrap"><table><thead><tr>${c.cols.map(h => '<th>' + h + '</th>').join('')}<th style="text-align:right">Aksi</th></tr></thead>
+    <tbody id="mBody"></tbody></table></div>
+  </div>`;
+  const draw = () => {
+    const q = (APP._master.q || '').toLowerCase();
+    const flt = q ? rows.filter(r => JSON.stringify(r).toLowerCase().includes(q)) : rows;
+    $('#mBody').innerHTML = flt.length ? flt.map(r => '<tr>' + c.row(r, pkm).map(x => '<td>' + x + '</td>').join('') + (c.form && canAdd ? opsCol(null, r.id, r.id) : opsCol(null, null, null)) + '</tr>').join('') : emptyRow(c.cols.length + 1, 'Belum ada data ' + c.t);
+  };
+  draw();
+  const q = $('#mQ'); if (q) q.oninput = () => { APP._master.q = q.value; draw(); };
+  APP._mEdit = async id => {
+    if (!canAdd) { toast('Anda tidak memiliki izin mengubah data ini.', 'err'); return; }
+    const p = id ? rows.find(r => r.id === id) : null;
+    const ctx = { pkm, forcedPkm: APP.session.role === 'ADMIN_PUSKESMAS' ? APP.session.puskesmas_id : null };
+    modal((id ? 'Ubah ' : 'Tambah ') + c.t, '<form id="mForm" data-form="m">' + c.form(p, ctx) + '</form>', '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>', c.cols.length > 5);
+    $('#mSave').onclick = async () => {
+      const f = $('#mForm'); const obj = c.save(f);
+      if (ctx.forcedPkm && entity === 'tenaga_kesehatan') obj.puskesmas_id = ctx.forcedPkm;
+      const v = c.validate(obj); if (v) { toast(v, 'err'); return; }
+      try {
+        if (id) { await DB.update(entity, id, obj, p); toast(c.t + ' diperbarui.'); }
+        else { await DB.insert(entity, obj); toast(c.t + ' tersimpan.'); }
+        closeModal(); go(APP.view);
+      } catch (e) { toast('Gagal menyimpan: ' + (e.message || e), 'err'); }
+    };
+  };
+  APP._mDel = async id => {
+    if (!canAdd) { toast('Anda tidak memiliki izin menghapus data ini.', 'err'); return; }
+    const p = rows.find(r => r.id === id);
+    confirmDlg('Hapus ' + (p?.nama || 'data') + ' secara permanen? Data yang sudah terhubung dengan kegiatan lain tidak dapat dihapus.', async () => {
+      try { await DB.remove(entity, id, p); toast('Data dihapus.'); go(APP.view); } catch (e) { toast('Gagal menghapus — data mungkin masih dipakai transaksi lain.', 'err'); }
+    }, true);
+  };
+}
+</script>
+<script>
+/* ================= PEMETAAN ================= */
+async function vPemetaan() {
+  const [pm, pkm, tk, kom] = await Promise.all([ref('pemetaan', true), ref('puskesmas'), ref('tenaga_kesehatan'), ref('kompetensi')]);
+  let rows = pm;
+  if (APP.session.role === 'ADMIN_PUSKESMAS') rows = rows.filter(r => r.puskesmas_id === APP.session.puskesmas_id);
+  const canAdd = can('createPemetaan');
+  $('#content').innerHTML = `
+  <div class="page-h"><div><h2>Pemetaan Kebutuhan Pembinaan</h2><p>Hasil asesmen kebutuhan pembinaan tiap tenaga kesehatan. Skor prioritas 1–4 menjadi dasar penyusunan program (otomatis terhubung ke perencanaan).</p></div>
+  <div class="sp">${canAdd ? '<button class="btn btn-p" data-action="pm-add">' + SVG.plus + 'Tambah Pemetaan</button>' : ''}</div></div>
+  <div class="card"><div class="card-h"><h3>Hasil Pemetaan ${new Date().getFullYear()}</h3><span class="badge b-teal">${rows.length} data</span>
+    <input id="mQ" class="inp" style="max-width:220px;margin-left:auto" placeholder="Cari..."></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Tahun</th><th>Puskesmas</th><th>Tenaga Kesehatan</th><th>Kompetensi</th><th>Skor Prioritas</th><th>Tingkat</th><th style="text-align:right">Aksi</th></tr></thead><tbody id="mBody"></tbody></table></div></div>`;
+  const draw = (q) => {
+    const flt = q ? rows.filter(r => JSON.stringify(r).toLowerCase().includes(q.toLowerCase())) : rows;
+    $('#mBody').innerHTML = flt.length ? flt.map(r => { const t = tk.find(x => x.id === r.tenaga_id) || {}; return '<tr><td>' + (r.tahun || '—') + '</td><td>' + esc((pkm.find(x => x.id === r.puskesmas_id) || {}).nama || '—') + '</td><td><b>' + esc(t.nama || '—') + '</b><div style="font-size:.7rem;color:var(--tx3)">' + esc(t.profesi || '') + '</div></td><td>' + esc((kom.find(x => x.id === r.kompetensi_id) || {}).nama || '—') + '</td><td>' + scorePill(r.skor) + '</td><td><span class="prio"><i style="background:' + (PRIORITAS[r.skor] || {}).w + '"></i>' + (PRIORITAS[r.skor] || {}).l + '</span></td>' + opsCol(null, canAdd ? r.id : null, canAdd ? r.id : null) + '</tr>'; }).join('') : emptyRow(7, 'Belum ada data pemetaan', 'Tambahkan hasil asesmen kebutuhan pembinaan.');
+  };
+  draw('');
+  $('#mQ').oninput = e => draw(e.target.value);
+  APP._pmForm = async id => {
+    const p = id ? pm.find(r => r.id === id) : null;
+    const forcedPkm = APP.session.role === 'ADMIN_PUSKESMAS' ? APP.session.puskesmas_id : null;
+    modal((id ? 'Ubah' : 'Tambah') + ' Pemetaan', '<form id="mForm">' +
+      '<div class="frow">' + field('Puskesmas *', selHtml('puskesmas_id', pkm.map(x => ({ v: x.id, l: x.nama })), p?.puskesmas_id || forcedPkm)) + field('Tenaga Kesehatan *', '<select name="tenaga_id" class="inp"></select>') + '</div>' +
+      field('Kompetensi yang Dibina *', selHtml('kompetensi_id', kom.map(x => ({ v: x.id, l: x.nama + ' — ' + x.kategori })), p?.kompetensi_id)) +
+      field('Skor Prioritas *', '<div style="display:flex;gap:8px;flex-wrap:wrap" id="pmSkor">' + [1, 2, 3, 4].map(s => '<button type="button" class="btn ' + ((p?.skor || 2) === s ? 'btn-p' : 'btn-o') + '" data-s="' + s + '">' + s + ' — ' + PRIORITAS[s].l + '</button>').join('') + '</div><input type="hidden" name="skor" value="' + (p?.skor || 2) + '">') +
+      field('Catatan', '<textarea name="catatan" class="inp">' + esc(p?.catatan) + '</textarea>') +
+      '<input type="hidden" name="tahun" value="' + (p?.tahun || new Date().getFullYear()) + '"></form>',
+      '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>');
+    const drawTK = () => {
+      const pid = fd($('#mForm'), 'puskesmas_id'); const sel = $('#mForm [name=tenaga_id]');
+      const opts = tk.filter(t => t.puskesmas_id === pid);
+      sel.innerHTML = '<option value="">— Pilih —</option>' + opts.map(t => '<option value="' + t.id + '"' + (p?.tenaga_id === t.id ? ' selected' : '') + '>' + esc(t.nama + ' (' + t.profesi + ')') + '</option>').join('');
+    };
+    drawTK();
+    $('#mForm [name=puskesmas_id]').onchange = drawTK;
+    document.querySelectorAll('#pmSkor button').forEach(b => b.onclick = () => { document.querySelectorAll('#pmSkor button').forEach(x => x.className = 'btn btn-o'); b.className = 'btn btn-p'; $('#mForm [name=skor]').value = b.dataset.s; });
+    $('#mSave').onclick = async () => {
+      const f = $('#mForm'); const obj = { tahun: +fd(f, 'tahun'), puskesmas_id: fd(f, 'puskesmas_id'), tenaga_id: fd(f, 'tenaga_id'), kompetensi_id: fd(f, 'kompetensi_id'), skor: +fd(f, 'skor'), tingkat: PRIORITAS[+fd(f, 'skor')].l.toUpperCase(), catatan: fd(f, 'catatan'), status: 'AKTIF' };
+      if (forcedPkm) obj.puskesmas_id = forcedPkm;
+      if (!obj.puskesmas_id || !obj.tenaga_id || !obj.kompetensi_id) { toast('Puskesmas, tenaga kesehatan, dan kompetensi wajib diisi.', 'err'); return; }
+      try { if (id) { await DB.update('pemetaan', id, obj, p); toast('Pemetaan diperbarui.'); } else { await DB.insert('pemetaan', obj); toast('Pemetaan tersimpan — skor prioritas otomatis menjadi dasar perencanaan program.'); } closeModal(); go('pemetaan'); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); }
+    };
+  };
+  APP._pmDel = id => { const p = pm.find(r => r.id === id); confirmDlg('Hapus data pemetaan ' + ((tk.find(x => x.id === p?.tenaga_id) || {}).nama || '') + '?', async () => { await DB.remove('pemetaan', id, p); toast('Data dihapus.'); go('pemetaan'); }, true); };
+}
+/* ================= PROGRAM ================= */
+async function vProgram() {
+  const [pro, jdw] = await Promise.all([ref('program', true), ref('jadwal')]);
+  const canAdd = can('createProgram');
+  $('#content').innerHTML = `
+  <div class="page-h"><div><h2>Program Pembimbingan</h2><p>Perencanaan program berbasis hasil pemetaan. Setiap program dapat diduplikasi untuk periode berikutnya.</p></div>
+  <div class="sp">${canAdd ? '<button class="btn btn-p" data-action="pro-add">' + SVG.plus + 'Buat Program</button>' : ''}</div></div>
+  <div class="grid g3">${pro.length ? pro.map(p => { const n = jdw.filter(j => j.program_id === p.id); return `
+    <div class="card"><div class="card-b" style="padding:18px">
+      <div style="display:flex;align-items:flex-start;gap:8px">${badge(PROGRAM_STATUS, p.status)}<span style="margin-left:auto" class="badge b-gray">${p.tahun}</span></div>
+      <h3 style="margin:9px 0 6px;font-size:1rem">${esc(p.nama)}</h3>
+      <p style="font-size:.79rem;color:var(--tx2);min-height:38px">${esc(p.deskripsi || '—')}</p>
+      <div style="font-size:.74rem;color:var(--tx3);margin:8px 0 12px">${SVG.cal.replace('width="24" height="24"', 'width="13" height="13"')} ${dID(p.mulai)} — ${dID(p.selesai)} • ${n.length} kegiatan terjadwal</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        ${canAdd ? '<button class="btn btn-o btn-s" data-action="pro-edit" data-id="' + p.id + '">' + SVG.pen + 'Ubah</button>' : ''}
+        ${canAdd ? '<button class="btn btn-o btn-s" data-action="pro-dup" data-id="' + p.id + '">' + SVG.copy + 'Duplikat</button>' : ''}
+        ${canAdd ? '<button class="btn btn-d btn-s" data-action="pro-del" data-id="' + p.id + '">' + SVG.trash + 'Hapus</button>' : ''}
+        <button class="btn btn-p btn-s" data-action="go" data-view="jadwal">Lihat Jadwal</button>
+      </div></div></div>`; }).join('') : '<div class="card" style="grid-column:1/-1">' + emptyRow(1, 'Belum ada program', 'Buat program pembimbingan dari hasil pemetaan.') + '</div>'}</div>`;
+  APP._proForm = async (id, dup) => {
+    const p = dup ? pro.find(r => r.id === id) : (id ? pro.find(r => r.id === id) : null);
+    modal((dup ? 'Duplikat' : id ? 'Ubah' : 'Buat') + ' Program', '<form id="mForm">' +
+      field('Nama Program *', '<input name="nama" class="inp" required value="' + esc(dup ? p.nama + ' (Salinan)' : p?.nama) + '">') +
+      '<div class="frow">' + field('Tahun *', '<input name="tahun" type="number" class="inp" value="' + (dup ? new Date().getFullYear() : p?.tahun || new Date().getFullYear()) + '">') + field('Status', selHtml('status', Object.entries(PROGRAM_STATUS).map(([v, x]) => ({ v, l: x.l })), dup ? 'RENCANA' : p?.status || 'RENCANA')) + '</div>' +
+      '<div class="frow">' + field('Mulai *', '<input name="mulai" type="date" class="inp" required value="' + (p?.mulai || '') + '">') + field('Selesai *', '<input name="selesai" type="date" class="inp" required value="' + (p?.selesai || '') + '">') + '</div>' +
+      field('Deskripsi', '<textarea name="deskripsi" class="inp">' + esc(p?.deskripsi) + '</textarea>') + '</form>',
+      '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>');
+    $('#mSave').onclick = async () => {
+      const f = $('#mForm'); const obj = { nama: fd(f, 'nama'), tahun: +fd(f, 'tahun'), status: fd(f, 'status'), mulai: fd(f, 'mulai'), selesai: fd(f, 'selesai'), deskripsi: fd(f, 'deskripsi') };
+      if (!obj.nama || !obj.mulai || !obj.selesai) { toast('Nama, tanggal mulai, dan selesai wajib diisi.', 'err'); return; }
+      if (obj.selesai < obj.mulai) { toast('Tanggal selesai harus setelah tanggal mulai.', 'err'); return; }
+      try { await DB.insert('program', obj); toast('Program tersimpan.'); closeModal(); go('program'); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); }
+    };
+  };
+  APP._proEdit = id => APP._proForm(id, false);
+  APP._proDel = id => { const p = pro.find(r => r.id === id); confirmDlg('Hapus program "' + p?.nama + '"? Jadwal terkait tidak ikut terhapus.', async () => { await DB.remove('program', id, p); toast('Program dihapus.'); go('program'); }, true); };
+  APP._proDup = async id => { const p = pro.find(r => r.id === id); try { await DB.insert('program', { nama: p.nama + ' (Salinan)', tahun: new Date().getFullYear(), status: 'RENCANA', mulai: p.mulai, selesai: p.selesai, deskripsi: p.deskripsi }); toast('Program berhasil diduplikasi.'); go('program'); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); } };
+}
+/* ================= JADWAL ================= */
+let jadwalMode = 'kalender';
+async function vJadwal() {
+  const [jdw, pkm, prs, pro] = await Promise.all([ref('jadwal', true), ref('puskesmas'), ref('perseptor'), ref('program')]);
+  let rows = jdw;
+  const role = APP.session.role;
+  if (role === 'PERSEPTOR') rows = rows.filter(j => j.perseptor_id === APP.session.perseptor_id);
+  if (role === 'ADMIN_PUSKESMAS') rows = rows.filter(j => j.puskesmas_id === APP.session.puskesmas_id);
+  if (role === 'PESERTA') { const ps = await ref('peserta'); const mine = new Set(ps.filter(p => p.tenaga_id === APP.session.tenaga_id).map(p => p.jadwal_id)); rows = rows.filter(j => mine.has(j.id)); }
+  const canAdd = can('createJadwal');
+  const up = APP.filters.jd = APP.filters.jd || { pkm: '', st: '', bulan: new Date().toISOString().slice(0, 7) };
+  $('#content').innerHTML = `
+  <div class="page-h"><div><h2>Jadwal Pembimbingan</h2><p>Kalender interaktif kegiatan pembimbingan. Gunakan tombol status untuk mengubah tahapan kegiatan (akan mengirim notifikasi).</p></div>
+  <div class="sp">${canAdd ? '<button class="btn btn-p" data-action="jd-add">' + SVG.plus + 'Buat Jadwal</button>' : ''}
+    <div style="display:inline-flex;background:#e9efee;border-radius:11px;padding:3px">
+      <button class="tab ${jadwalMode === 'kalender' ? 'on' : ''}" data-action="jd-mode" data-m="kalender">Kalender</button>
+      <button class="tab ${jadwalMode === 'daftar' ? 'on' : ''}" data-action="jd-mode" data-m="daftar">Daftar</button></div></div></div>
+  <div class="filters">
+    <input type="month" class="inp" style="max-width:170px" id="jdBulan" value="${up.bulan}">
+    <select data-f="pkm"><option value="">Semua Puskesmas</option>${pkm.map(p => '<option value="' + p.id + '"' + (up.pkm === p.id ? ' selected' : '') + '>' + esc(p.nama) + '</option>').join('')}</select>
+    <select data-f="st"><option value="">Semua Status</option>${Object.entries(JADWAL_STATUS).map(([k, v]) => '<option value="' + k + '"' + (up.st === k ? ' selected' : '') + '>' + v.l + '</option>').join('')}</select>
+  </div><div id="jdBody"></div>`;
+  const draw = () => {
+    let flt = rows;
+    if (up.pkm) flt = flt.filter(j => j.puskesmas_id === up.pkm);
+    if (up.st) flt = flt.filter(j => j.status === up.st);
+    if (jadwalMode === 'kalender') {
+      const [yy, mm] = up.bulan.split('-').map(Number);
+      const first = new Date(yy, mm - 1, 1); const startDow = (first.getDay() + 6) % 7;
+      const days = new Date(yy, mm, 0).getDate();
+      const prevDays = new Date(yy, mm - 1, 0).getDate();
+      let cells = '';
+      for (let i = startDow; i > 0; i--) cells += '<div class="cal-d other"><span class="dnum">' + (prevDays - i + 1) + '</span></div>';
+      for (let d = 1; d <= days; d++) {
+        const ds = yy + '-' + String(mm).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+        const evs = flt.filter(j => j.tanggal === ds);
+        cells += '<div class="cal-d' + (ds === today() ? ' today' : '') + '"><span class="dnum">' + d + '</span>' + evs.map(j => { const st = JADWAL_STATUS[j.status] || {}; const col = { 'b-gray': '#94a3b8', 'b-sky': '#0284c7', 'b-teal': '#0f766e', 'b-violet': '#7c3aed', 'b-green': '#059669', 'b-amber': '#d97706', 'b-red': '#dc2626' }[st.c] || '#0f766e'; return '<button class="cal-ev" style="background:' + col + '" data-action="jd-open" data-id="' + j.id + '" title="' + esc(j.judul) + '">' + esc(j.jam_mulai + ' ' + j.judul) + '</button>'; }).join('') + '</div>';
+      }
+      $('#jdBody').innerHTML = '<div class="card"><div class="card-h"><h3>' + first.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) + '</h3><span class="badge b-teal" style="margin-left:auto">' + flt.length + ' kegiatan</span></div><div class="cal">' + ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(d => '<div class="cal-h">' + d + '</div>').join('') + cells + '</div></div>';
+    } else {
+      const flt2 = flt.slice().sort((a, b) => String(b.tanggal).localeCompare(a.tanggal));
+      $('#jdBody').innerHTML = '<div class="card"><div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Kegiatan</th><th>Puskesmas</th><th>Perseptor</th><th>Metode</th><th>Status</th><th style="text-align:right">Aksi</th></tr></thead><tbody>' +
+        (flt2.length ? flt2.map(j => '<tr><td>' + dID(j.tanggal) + '<div style="font-size:.7rem;color:var(--tx3)">' + j.jam_mulai + '–' + j.jam_selesai + ' WIB</div></td><td><b>' + esc(j.judul) + '</b></td><td>' + esc((pkm.find(p => p.id === j.puskesmas_id) || {}).nama || '—') + '</td><td>' + esc((prs.find(p => p.id === j.perseptor_id) || {}).nama || '—') + '</td><td><span class="badge b-gray">' + esc(j.metode) + '</span></td><td>' + badge(JADWAL_STATUS, j.status) + '</td><td style="white-space:nowrap;text-align:right"><button class="btn btn-o btn-s" data-action="jd-open" data-id="' + j.id + '">' + SVG.eye + 'Detail</button></td></tr>').join('') : emptyRow(7, 'Tidak ada jadwal', 'Sesuaikan filter atau buat jadwal baru.')) + '</tbody></table></div></div>';
+    }
+  };
+  draw();
+  $('#jdBulan').onchange = e => { up.bulan = e.target.value || up.bulan; draw(); };
+  document.querySelectorAll('[data-f]').forEach(s => s.onchange = () => { up[s.dataset.f] = s.value; draw(); });
+  APP._jdForm = async id => {
+    const p = id ? jdw.find(r => r.id === id) : null;
+    modal(id ? 'Ubah Jadwal' : 'Buat Jadwal', '<form id="mForm">' +
+      field('Judul Kegiatan *', '<input name="judul" class="inp" required value="' + esc(p?.judul) + '" placeholder="mis. Observasi Langsung Hand Hygiene">') +
+      '<div class="frow">' + field('Program *', selHtml('program_id', pro.map(x => ({ v: x.id, l: x.nama })), p?.program_id)) + field('Metode *', selHtml('metode', METODE, p?.metode)) + '</div>' +
+      '<div class="frow">' + field('Puskesmas *', selHtml('puskesmas_id', pkm.map(x => ({ v: x.id, l: x.nama })), p?.puskesmas_id)) + field('Perseptor *', selHtml('perseptor_id', prs.map(x => ({ v: x.id, l: x.nama })), p?.perseptor_id)) + '</div>' +
+      '<div class="frow">' + field('Tanggal *', '<input name="tanggal" type="date" class="inp" required value="' + (p?.tanggal || '') + '" min="' + today() + '">') + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + field('Jam Mulai', '<input name="jam_mulai" type="time" class="inp" value="' + (p?.jam_mulai || '08:30') + '">') + field('Jam Selesai', '<input name="jam_selesai" type="time" class="inp" value="' + (p?.jam_selesai || '11:30') + '">') + '</div></div>' +
+      field('Lokasi', '<input name="lokasi" class="inp" value="' + esc(p?.lokasi) + '">') +
+      field('Catatan', '<textarea name="catatan" class="inp">' + esc(p?.catatan) + '</textarea>') + '</form>',
+      '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>', true);
+    $('#mSave').onclick = async () => {
+      const f = $('#mForm');
+      const obj = { judul: fd(f, 'judul'), program_id: fd(f, 'program_id'), metode: fd(f, 'metode'), puskesmas_id: fd(f, 'puskesmas_id'), perseptor_id: fd(f, 'perseptor_id'), tanggal: fd(f, 'tanggal'), jam_mulai: fd(f, 'jam_mulai'), jam_selesai: fd(f, 'jam_selesai'), lokasi: fd(f, 'lokasi'), catatan: fd(f, 'catatan') };
+      if (!obj.judul || !obj.program_id || !obj.metode || !obj.puskesmas_id || !obj.perseptor_id || !obj.tanggal) { toast('Lengkapi semua kolom bertanda *.', 'err'); return; }
+      if (obj.jam_selesai <= obj.jam_mulai) { toast('Jam selesai harus setelah jam mulai.', 'err'); return; }
+      const bentrok = jdw.filter(j => j.id !== id && j.perseptor_id === obj.perseptor_id && j.tanggal === obj.tanggal && !['DIBATALKAN', 'SELESAI'].includes(j.status) && (obj.jam_mulai < j.jam_selesai) && (obj.jam_selesai > j.jam_mulai));
+      if (bentrok.length) { modal('Benturan Jadwal Terdeteksi', '<div class="badge b-red" style="margin-bottom:10px">Perseptor sudah terjadwal</div><p style="font-size:.86rem">Perseptor ini sudah memiliki kegiatan lain pada tanggal dan jam yang sama:</p><ul style="margin:10px 0 0 18px;font-size:.84rem">' + bentrok.map(b => '<li>' + esc(b.judul) + ' (' + dID(b.tanggal) + ', ' + b.jam_mulai + '–' + b.jam_selesai + ')</li>').join('') + '</ul>', '<button class="btn btn-o" data-action="modal-close">Perbaiki</button>'); return; }
+      try {
+        if (id) { await DB.update('jadwal', id, obj, p); toast('Jadwal diperbarui.'); }
+        else { obj.status = 'DIJADWALKAN'; await DB.insert('jadwal', obj); notify('Jadwal baru: ' + obj.judul, 'Kegiatan ' + dID(obj.tanggal) + ' di ' + ((pkm.find(x => x.id === obj.puskesmas_id) || {}).nama || '') + '.', 'INFO', 'jadwal'); toast('Jadwal tersimpan & notifikasi terkirim.'); }
+        closeModal(); go('jadwal');
+      } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); }
+    };
+  };
+}
+/* status transitions */
+APP._jdSetStatus = async (id, st) => {
+  const j = (await ref('jadwal')).find(x => x.id === id); if (!j) return;
+  confirmDlg('Ubah status kegiatan "' + j.judul + '" menjadi ' + JADWAL_STATUS[st].l + '?', async () => {
+    try { await DB.update('jadwal', id, { status: st }, j); notify('Status kegiatan diubah', j.judul + ' kini ' + JADWAL_STATUS[st].l + '.', st === 'DIBATALKAN' ? 'PERINGATAN' : 'INFO', 'jadwal'); toast('Status diperbarui & notifikasi terkirim.'); closeModal(); go(APP.view === 'detail' ? 'detail' : APP.view, APP.view === 'detail' ? { id } : {}); if (APP.view !== 'detail') APP._detailOpen(id); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); }
+  });
+};
+APP._detailOpen = id => go('detail', { id });
+/* ================= PELAKSANAAN & RIWAYAT ================= */
+async function vPelaksanaan() {
+  await jadwalListRender('pelaksanaan');
+}
+async function vRiwayat() { await jadwalListRender('riwayat'); }
+async function jadwalListRender(mode) {
+  const [jdw, pkm, prs] = await Promise.all([ref('jadwal', true), ref('puskesmas'), ref('perseptor')]);
+  let rows = jdw;
+  const role = APP.session.role;
+  if (role === 'PERSEPTOR') rows = rows.filter(j => j.perseptor_id === APP.session.perseptor_id);
+  if (role === 'ADMIN_PUSKESMAS') rows = rows.filter(j => j.puskesmas_id === APP.session.puskesmas_id);
+  if (role === 'PESERTA') { const ps = await ref('peserta'); const mine = new Set(ps.filter(p => p.tenaga_id === APP.session.tenaga_id).map(p => p.jadwal_id)); rows = rows.filter(j => mine.has(j.id)); }
+  rows = mode === 'pelaksanaan'
+    ? rows.filter(j => ['DIKONFIRMASI', 'BERLANGSUNG'].includes(j.status) || (['DIJADWALKAN'].includes(j.status) && j.tanggal <= today())).sort((a, b) => String(a.tanggal).localeCompare(b.tanggal))
+    : rows.filter(j => ['SELESAI', 'DIBATALKAN', 'DITUNDA'].includes(j.status)).sort((a, b) => String(b.tanggal).localeCompare(a.tanggal));
+  $('#content').innerHTML = `
+  <div class="page-h"><div><h2>${mode === 'pelaksanaan' ? 'Pelaksanaan Pembimbingan' : 'Riwayat Pembimbingan'}</h2><p>${mode === 'pelaksanaan' ? 'Kegiatan yang perlu dilaksanakan/diseragamkan statusnya: konfirmasi kehadiran, mulai sesi, hingga menandai selesai.' : 'Arsip kegiatan yang telah selesai, ditunda, atau dibatalkan.'}</p></div></div>
+  <div style="display:grid;gap:12px">${rows.length ? rows.map(j => `
+    <div class="card"><div class="card-b" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 18px">
+      <div style="text-align:center;background:var(--teal-50);border-radius:11px;padding:7px 13px;min-width:56px"><b style="display:block;font-size:1.15rem;color:var(--teal-800)">${new Date(j.tanggal).getDate()}</b><small style="font-size:.62rem;color:var(--teal-700);letter-spacing:.06em">${new Date(j.tanggal).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }).toUpperCase()}</small></div>
+      <div style="flex:1;min-width:220px"><b style="font-size:.94rem">${esc(j.judul)}</b> ${badge(JADWAL_STATUS, j.status)}
+        <div style="font-size:.75rem;color:var(--tx2);margin-top:3px">📍 ${esc((pkm.find(p => p.id === j.puskesmas_id) || {}).nama || '—')} &nbsp;•&nbsp; 👤 ${esc((prs.find(p => p.id === j.perseptor_id) || {}).nama || '—')} &nbsp;•&nbsp; 🕐 ${j.jam_mulai}–${j.jam_selesai} WIB &nbsp;•&nbsp; <span class="badge b-gray">${esc(j.metode)}</span></div></div>
+      <button class="btn ${mode === 'pelaksanaan' ? 'btn-p' : 'btn-o'}" data-action="jd-open" data-id="${j.id}">${SVG.eye}${mode === 'pelaksanaan' ? 'Laksanakan' : 'Detail'}</button>
+    </div></div>`).join('') : '<div class="card">' + emptyRow(1, mode === 'pelaksanaan' ? 'Tidak ada kegiatan yang perlu dilaksanakan' : 'Belum ada riwayat', 'Semua kegiatan sudah tertangani.') + '</div>'}</div>`;
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ================= DETAIL KEGIATAN (9 TAB) ================= */
+const DET_TABS = ['Ringkasan', 'Peserta', 'Instrumen', 'Observasi', 'Kasus', 'Temuan', 'Rekomendasi', 'RTL', 'Dokumentasi'];
+async function vDetail() {
+  const id = APP.params.id;
+  const [jdw, pkm, prs, pro] = await Promise.all([ref('jadwal'), ref('puskesmas'), ref('perseptor'), ref('program')]);
+  const j = jdw.find(x => x.id === id);
+  if (!j) { $('#content').innerHTML = '<div class="card">' + emptyRow(1, 'Kegiatan tidak ditemukan', '') + '</div>'; return; }
+  const P = pkm.find(p => p.id === j.puskesmas_id) || {}, R = prs.find(p => p.id === j.perseptor_id) || {};
+  const tab = APP.params.tab || 'Ringkasan';
+  const url = location.href.split('#')[0] + '#kegiatan=' + j.id;
+  const canSet = can('setStatus');
+  $('#content').innerHTML = `
+  <button class="btn btn-o btn-s" data-action="go" data-view="${APP.filters._from || 'jadwal'}" style="margin-bottom:14px">← Kembali ke Jadwal</button>
+  <div class="det-hero">
+    <div class="k">PERSEPTOR • PEMBIMBINGAN KLINIK TERINTEGRASI</div>
+    <h2>${esc(j.judul)} ${badge(JADWAL_STATUS, j.status)}</h2>
+    <div class="det-info">
+      <div><span>Puskesmas</span><b>${esc(P.nama || '—')}</b></div>
+      <div><span>Perseptor</span><b>${esc(R.nama || '—')}</b></div>
+      <div><span>Tanggal</span><b>${dID(j.tanggal, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</b></div>
+      <div><span>Waktu</span><b>${j.jam_mulai} – ${j.jam_selesai} WIB</b></div>
+      <div><span>Program</span><b>${esc((pro.find(x => x.id === j.program_id) || {}).nama || '—')}</b></div>
+      <div><span>Metode</span><b>${esc(j.metode)}</b></div>
+      <div><span>Lokasi</span><b>${esc(j.lokasi || '—')}</b></div>
+      <div><span>Rata-rata Penilaian</span><b id="detAvg">…</b></div>
+    </div>
+  </div>
+  ${canSet ? `<div class="card" style="margin-bottom:16px"><div class="card-b" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:13px 18px"><b style="font-size:.82rem;margin-right:4px">Aksi Status:</b>
+    ${FLOW_JADWAL[j.status]?.map(st => '<button class="btn ' + (st === 'SELESAI' ? 'btn-p' : 'btn-o') + ' btn-s" data-action="jd-status" data-id="' + j.id + '" data-st="' + st + '">' + JADWAL_STATUS[st].l + '</button>').join('') || '<span class="badge b-gray">Status akhir</span>'}
+    <span style="margin-left:auto"><button class="btn btn-o btn-s" data-action="qr-show" data-id="${j.id}">QR Kegiatan</button></span></div></div>` : ''}
+  <div class="tabs">${DET_TABS.map(t => '<button class="tab ' + (t === tab ? 'on' : '') + '" data-action="det-tab" data-t="' + t + '">' + t + '</button>').join('')}</div>
+  <div id="detTab"></div>`;
+  /* avg */
+  try { const nil = (await ref('penilaian')).filter(n => n.jadwal_id === j.id && n.skor); $('#detAvg').textContent = nil.length ? (nil.reduce((s, n) => s + n.skor, 0) / nil.length).toFixed(1) + ' / 5.0' : 'Belum ada skor'; } catch (e) { $('#detAvg').textContent = '—'; }
+  await detTabRender(j, tab);
+  APP._detJ = j;
+}
+async function detTabRender(j, tab) {
+  const box = $('#detTab'); if (!box) return;
+  box.innerHTML = '<div class="sk" style="height:160px"></div>';
+  if (tab === 'Ringkasan') return detRingkasan(j, box);
+  if (tab === 'Peserta') return detPeserta(j, box);
+  if (tab === 'Instrumen') return detInstrumen(j, box);
+  if (tab === 'Observasi') return detObservasi(j, box);
+  if (tab === 'Kasus') return detKasus(j, box);
+  if (tab === 'Temuan') return detTemuan(j, box);
+  if (tab === 'Rekomendasi') return detRekomendasi(j, box);
+  if (tab === 'RTL') return detRTL(j, box);
+  if (tab === 'Dokumentasi') return detDokumentasi(j, box);
+}
+/* ---- TAB RINGKASAN ---- */
+async function detRingkasan(j, box) {
+  const [tk, nil, kas, tem, rtlL, ba, ps] = await Promise.all([ref('tenaga_kesehatan'), ref('penilaian'), ref('kasus'), ref('temuan'), ref('rtl'), ref('berita_acara'), ref('peserta')]);
+  const pes = ps.filter(p => p.jadwal_id === j.id);
+  const nilJ = nil.filter(n => n.jadwal_id === j.id && n.skor);
+  const perPeserta = pes.map(p => { const arr = nilJ.filter(n => n.tenaga_id === p.tenaga_id); return { t: tk.find(x => x.id === p.tenaga_id), avg: arr.length ? arr.reduce((s, n) => s + n.skor, 0) / arr.length : null }; });
+  const avgAll = nilJ.length ? nilJ.reduce((s, n) => s + n.skor, 0) / nilJ.length : 0;
+  const baJ = ba.find(b => b.jadwal_id === j.id);
+  box.innerHTML = `
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><h3>Identitas Kegiatan</h3></div><div class="card-b">
+      <div class="kv">
+        <span>Puskesmas</span><b>${esc((await refPkm(j.puskesmas_id) || {}).nama || '—')}</b>
+        <span>Perseptor</span><b>${esc((await refPrs(j.perseptor_id) || {}).nama || '—')}</b>
+        <span>Peserta</span><b>${pes.length} tenaga kesehatan</b>
+        <span>Topik</span><b>${esc(j.judul)}</b>
+        <span>Tujuan</span><b>Meningkatkan kompetensi peserta sesuai standar melalui ${esc(j.metode.toLowerCase())}.</b>
+        <span>Jumlah Temuan</span><b>${tem.filter(t => t.jadwal_id === j.id).length} temuan</b>
+        <span>Jumlah Kasus</span><b>${kas.filter(k => k.jadwal_id === j.id).length} kasus</b>
+        <span>Catatan</span><b>${esc(j.catatan || '—')}</b>
+      </div></div></div>
+    <div class="card"><div class="card-h"><h3>Hasil Penilaian per Peserta</h3>${can('inputPenilaian') ? '<button class="btn btn-o btn-s" style="margin-left:auto" data-action="det-tab" data-t="Instrumen">Isi Instrumen</button>' : ''}</div><div class="card-b">
+      ${perPeserta.length ? perPeserta.map(x => '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eef3f2"><div style="flex:1"><b style="font-size:.85rem">' + esc(x.t?.nama || '—') + '</b><div style="font-size:.7rem;color:var(--tx3)">' + esc(x.t?.profesi || '') + '</div></div>' + (x.avg ? scorePill(Math.round(x.avg)) + ' <b style="font-size:.8rem">' + x.avg.toFixed(1) + '/5</b>' : '<span class="badge b-gray">Belum dinilai</span>') + '</div>').join('') : '<div class="empty">' + SVG.people + '<b>Belum ada peserta</b><span>Tambahkan peserta pada tab Peserta.</span></div>'}
+      ${nilJ.length ? '<div style="margin-top:12px;padding:11px 14px;background:var(--teal-50);border-radius:11px;font-size:.84rem">Rata-rata keseluruhan: <b>' + avgAll.toFixed(2) + ' / 5.0</b> dari ' + nilJ.length + ' penilaian.</div>' : ''}
+    </div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><div class="card-h"><h3>Berita Acara</h3><span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+    ${baJ ? '<span class="badge b-green">Nomor ' + esc(baJ.nomor) + '</span>' : ''}
+    <button class="btn btn-p btn-s" data-action="ba-open" data-id="${j.id}">${SVG.doc}${baJ ? 'Lihat / Cetak' : 'Buat Berita Acara'}</button></span></div>
+    <div class="card-b" style="font-size:.8rem;color:var(--tx2)">${baJ ? 'Berita acara telah dibuat dan berstatus ' + (baJ.status === 'FINAL' ? 'FINAL' : 'DRAFT') + '. Gunakan tombol di atas untuk pratinjau, sunting, dan cetak.' : 'Belum ada berita acara. Buat otomatis dari data kegiatan, sunting sesuai kebutuhan, lalu cetak.'}</div></div>`;
+}
+/* ---- TAB PESERTA ---- */
+async function detPeserta(j, box) {
+  const [ps, tk] = await Promise.all([ref('peserta', true), ref('tenaga_kesehatan')]);
+  const pes = ps.filter(p => p.jadwal_id === j.id);
+  const canEdit = can('setStatus');
+  box.innerHTML = `<div class="card"><div class="card-h"><h3>Peserta Pembimbingan</h3><span class="badge b-teal">${pes.length} peserta</span>${canEdit ? '<button class="btn btn-p btn-s" style="margin-left:auto" data-action="pes-add">' + SVG.plus + 'Tambah Peserta</button>' : ''}</div>
+  <div class="tbl-wrap"><table><thead><tr><th>Nama</th><th>Profesi</th><th>Jabatan</th><th>Kehadiran</th><th style="text-align:right">Aksi</th></tr></thead><tbody>
+  ${pes.length ? pes.map(p => { const t = tk.find(x => x.id === p.tenaga_id) || {}; return '<tr><td><b>' + esc(t.nama || '—') + '</b></td><td>' + esc(t.profesi || '—') + '</td><td>' + esc(t.jabatan || '—') + '</td><td>' + badge({ HADIR: { l: 'Hadir', c: 'b-green' }, TIDAK_HADIR: { l: 'Tidak hadir', c: 'b-red' }, MENUNGGU: { l: 'Menunggu konfirmasi', c: 'b-gray' } }, p.hadir) + '</td><td style="white-space:nowrap;text-align:right">' + (canEdit ? '<button class="icon-act" title="Ubah kehadiran" data-action="pes-edit" data-id="' + p.id + '">' + SVG.pen + '</button><button class="icon-act del" title="Hapus" data-action="pes-del" data-id="' + p.id + '">' + SVG.trash + '</button>' : '') + '</td></tr>'; }).join('') : emptyRow(5, 'Belum ada peserta', canEdit ? 'Tambahkan tenaga kesehatan dari Puskesmas ini.' : '')}</tbody></table></div></div>`;
+  APP._pesAdd = async () => {
+    const tkPkm = tk.filter(t => t.puskesmas_id === j.puskesmas_id);
+    const sudah = new Set(pes.map(p => p.tenaga_id));
+    modal('Tambah Peserta', '<form id="mForm">' + field('Tenaga Kesehatan *', '<select name="tenaga_id" class="inp">' + tkPkm.filter(t => !sudah.has(t.id)).map(t => '<option value="' + t.id + '">' + esc(t.nama + ' (' + t.profesi + ')') + '</option>').join('') + '</select>') + field('Kehadiran', selHtml('hadir', ['HADIR', 'MENUNGGU', 'TIDAK_HADIR'], 'MENUNGGU')) + '</form>', '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>');
+    $('#mSave').onclick = async () => { const tid = fd($('#mForm'), 'tenaga_id'); if (!tid) { toast('Pilih tenaga kesehatan.', 'err'); return; } try { await DB.insert('peserta', { jadwal_id: j.id, tenaga_id: tid, hadir: fd($('#mForm'), 'hadir'), catatan: '' }); toast('Peserta ditambahkan.'); closeModal(); vDetailRefresh(); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); } };
+  };
+  APP._pesEdit = async id => { const p = ps.find(x => x.id === id); const t = tk.find(x => x.id === p.tenaga_id); modal('Ubah Kehadiran', '<form id="mForm">' + field('Peserta', '<input class="inp" value="' + esc(t?.nama || '') + '" readonly>') + field('Kehadiran', selHtml('hadir', ['HADIR', 'MENUNGGU', 'TIDAK_HADIR'], p.hadir)) + '</form>', '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>'); $('#mSave').onclick = async () => { await DB.update('peserta', id, { hadir: fd($('#mForm'), 'hadir') }, p); toast('Kehadiran diperbarui.'); closeModal(); vDetailRefresh(); }; };
+  APP._pesDel = id => confirmDlg('Hapus peserta ini dari kegiatan?', async () => { await DB.remove('peserta', id); toast('Peserta dihapus.'); vDetailRefresh(); }, true);
+}
+/* ---- TAB INSTRUMEN (skala 1-5) ---- */
+async function detInstrumen(j, box) {
+  const [nil, ps, tk] = await Promise.all([ref('penilaian', true), ref('peserta'), ref('tenaga_kesehatan')]);
+  const nilJ = nil.filter(n => n.jadwal_id === j.id && n.kategori !== 'OBSERVASI');
+  const pes = ps.filter(p => p.jadwal_id === j.id);
+  const canEdit = can('inputPenilaian');
+  const avg = arr => arr.length ? (arr.reduce((s, n) => s + n.skor, 0) / arr.length) : 0;
+  box.innerHTML = `<div class="card"><div class="card-h"><h3>Instrumen Penilaian</h3><span class="badge b-teal">Skala 1–5</span>${canEdit ? '<button class="btn btn-p btn-s" style="margin-left:auto" data-action="nil-add">' + SVG.plus + 'Isi Penilaian</button>' : ''}</div>
+  <div class="tbl-wrap"><table><thead><tr><th>Peserta</th><th>Persiapan</th><th>Aspek</th><th>Skor</th><th>Keterangan Skala</th><th>Catatan Perseptor</th><th style="text-align:right">Aksi</th></tr></thead><tbody>
+  ${nilJ.length ? nilJ.map(n => { const t = tk.find(x => x.id === n.tenaga_id) || {}; return '<tr><td><b>' + esc(t.nama || '—') + '</b></td><td>' + esc(n.kategori || 'PENILAIAN') + '</td><td>' + esc(n.aspek) + '</td><td>' + scorePill(n.skor) + '</td><td style="font-size:.72rem;color:var(--tx3)">' + SKALA[n.skor].split('— ')[1] + '</td><td style="font-size:.78rem">' + esc(n.catatan || '—') + '</td><td style="white-space:nowrap;text-align:right">' + (canEdit ? '<button class="icon-act" data-action="nil-edit" data-id="' + n.id + '">' + SVG.pen + '</button><button class="icon-act del" data-action="nil-del" data-id="' + n.id + '">' + SVG.trash + '</button>' : '') + '</td></tr>'; }).join('') : emptyRow(7, 'Belum ada penilaian', canEdit ? 'Isi instrumen penilaian untuk setiap peserta.' : 'Penilaian diisi oleh perseptor.')}
+  </tbody>${nilJ.length ? '<tfoot><tr style="background:#fafcfb"><th colspan="3">Rata-rata</th><th colspan="4"><div style="display:flex;align-items:center;gap:8px">' + scorePill(Math.round(avg(nilJ))) + ' <b>' + avg(nilJ).toFixed(2) + ' / 5.0</b> ' + progHtml(avg(nilJ) / 5) + '</div></th></tr></tfoot>' : ''}</table></div>
+  ${pes.length === 0 ? '<div class="card-b" style="font-size:.8rem;color:var(--tx2);border-top:1px solid var(--line)">Tambahkan peserta terlebih dahulu pada tab Peserta.</div>' : ''}</div>`;
+  APP._nilForm = async id => {
+    const p = id ? nil.find(x => x.id === id) : null;
+    const pesOpt = pes.map(pp => { const t = tk.find(x => x.id === pp.tenaga_id); return { v: pp.tenaga_id, l: t?.nama + ' (' + t?.profesi + ')' }; });
+    if (!pesOpt.length) { toast('Tambahkan peserta terlebih dahulu.', 'err'); return; }
+    modal(id ? 'Ubah Penilaian' : 'Isi Instrumen Penilaian', '<form id="mForm">' +
+      '<div class="frow">' + field('Peserta *', selHtml('tenaga_id', pesOpt, p?.tenaga_id)) + field('Tahap', selHtml('kategori', ['PERSIAPAN', 'PENILAIAN'], p?.kategori || 'PENILAIAN')) + '</div>' +
+      field('Aspek *', selHtml('aspek', ASPEK_PENILAIAN, p?.aspek)) +
+      field('Skor *', '<select name="skor" class="inp">' + [1, 2, 3, 4, 5].map(s => '<option value="' + s + '"' + ((p?.skor || 3) === s ? ' selected' : '') + '>' + SKALA[s] + '</option>').join('') + '</select>') +
+      field('Catatan Perseptor', '<textarea name="catatan" class="inp">' + esc(p?.catatan) + '</textarea>') + '</form>',
+      '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>');
+    $('#mSave').onclick = async () => { const f = $('#mForm'); const obj = { tenaga_id: fd(f, 'tenaga_id'), kategori: fd(f, 'kategori'), aspek: fd(f, 'aspek'), skor: +fd(f, 'skor'), catatan: fd(f, 'catatan') }; if (!obj.tenaga_id || !obj.aspek) { toast('Pilih peserta dan aspek.', 'err'); return; }
+      try { if (id) { await DB.update('penilaian', id, obj, p); toast('Penilaian diperbarui.'); } else { await DB.insert('penilaian', { jadwal_id: j.id, ...obj }); toast('Penilaian tersimpan.'); } closeModal(); vDetailRefresh(); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); } };
+  };
+  APP._nilDel = id => confirmDlg('Hapus penilaian ini?', async () => { const p = nil.find(x => x.id === id); await DB.remove('penilaian', id, p); toast('Penilaian dihapus.'); vDetailRefresh(); }, true);
+}
+/* ---- TAB OBSERVASI ---- */
+async function detObservasi(j, box) {
+  const [nil, tk] = await Promise.all([ref('penilaian', true), ref('tenaga_kesehatan')]);
+  const obs = nil.filter(n => n.jadwal_id === j.id && n.kategori === 'OBSERVASI');
+  const canEdit = can('inputPenilaian');
+  box.innerHTML = `<div class="card"><div class="card-h"><h3>Catatan Observasi Langsung</h3><span class="badge b-teal">${obs.length} catatan</span>${canEdit ? '<button class="btn btn-p btn-s" style="margin-left:auto" data-action="obs-add">' + SVG.plus + 'Tambah Observasi</button>' : ''}</div>
+  <div style="display:grid;gap:12px;padding:18px">${obs.length ? obs.map(o => { const t = tk.find(x => x.id === o.tenaga_id) || {}; return '<div style="border:1px solid var(--line);border-radius:12px;padding:14px 16px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:.88rem">' + esc(o.aspek) + '</b><span class="badge b-teal">' + esc(t.nama || 'Semua peserta') + '</span><span style="margin-left:auto;font-size:.7rem;color:var(--tx3)">' + dID(o.created_at || j.tanggal) + '</span>' + (canEdit ? '<button class="icon-act del" data-action="obs-del" data-id="' + o.id + '">' + SVG.trash + '</button>' : '') + '</div><p style="font-size:.84rem;margin-top:7px">' + esc(o.catatan || '—') + '</p></div>'; }).join('') : '<div class="empty">' + SVG.eye + '<b>Belum ada catatan observasi</b><span>Dokumentasikan hasil pengamatan selama pembimbingan berlangsung.</span></div>'}</div></div>`;
+  APP._obsAdd = async () => {
+    const pes = (await ref('peserta')).filter(p => p.jadwal_id === j.id); const tkAll = await ref('tenaga_kesehatan');
+    modal('Tambah Catatan Observasi', '<form id="mForm">' +
+      '<div class="frow">' + field('Aspek yang Diobservasi *', selHtml('aspek', ASPEK_PENILAIAN)) + field('Tenaga Diamati', selHtml('tenaga_id', [{ v: '', l: 'Semua peserta' }].concat(pes.map(pp => { const t = tkAll.find(x => x.id === pp.tenaga_id); return { v: pp.tenaga_id, l: t?.nama }; })))) + '</div>' +
+      field('Hasil Pengamatan *', '<textarea name="catatan" class="inp" style="min-height:110px" placeholder="Uraikan apa yang diamati: kepatuhan SOP, komunikasi, ketepatan tindakan..."></textarea>') + '</form>',
+      '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>');
+    $('#mSave').onclick = async () => { const f = $('#mForm'); const cat = fd(f, 'catatan'); if (!cat) { toast('Isi hasil pengamatan.', 'err'); return; } try { await DB.insert('penilaian', { jadwal_id: j.id, tenaga_id: fd(f, 'tenaga_id') || null, kategori: 'OBSERVASI', aspek: fd(f, 'aspek'), skor: null, catatan: cat }); toast('Catatan observasi tersimpan.'); closeModal(); vDetailRefresh(); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); } };
+  };
+  APP._obsDel = id => confirmDlg('Hapus catatan observasi ini?', async () => { const p = nil.find(x => x.id === id); await DB.remove('penilaian', id, p); toast('Catatan dihapus.'); vDetailRefresh(); }, true);
+}
+/* ---- TAB KASUS (anonim) ---- */
+async function detKasus(j, box) {
+  const kas = (await ref('kasus', true)).filter(k => k.jadwal_id === j.id);
+  const canEdit = can('createTemuan');
+  box.innerHTML = `<div class="card"><div class="card-h"><h3>Diskusi Kasus</h3><span class="badge b-amber">Identitas pasien dianonimkan</span>${canEdit ? '<button class="btn btn-p btn-s" style="margin-left:auto" data-action="kas-add">' + SVG.plus + 'Tambah Kasus</button>' : ''}</div>
+  <div class="tbl-wrap"><table><thead><tr><th>Kode Anonim</th><th>Usia / JK</th><th>Diagnosis</th><th>Tindakan</th><th>Hasil</th><th style="text-align:right">Aksi</th></tr></thead><tbody>
+  ${kas.length ? kas.map(k => '<tr><td><b>' + esc(k.kode_anonim) + '</b></td><td>' + k.usia + ' th / ' + esc(k.jenis_kelamin) + '</td><td>' + esc(k.diagnosis) + '</td><td>' + esc(k.tindakan) + '</td><td style="max-width:220px;font-size:.78rem">' + esc(k.hasil) + '</td><td style="white-space:nowrap;text-align:right"><button class="icon-act" title="Detail" data-action="kas-view" data-id="' + k.id + '">' + SVG.eye + '</button>' + (canEdit ? '<button class="icon-act" data-action="kas-edit" data-id="' + k.id + '">' + SVG.pen + '</button><button class="icon-act del" data-action="kas-del" data-id="' + k.id + '">' + SVG.trash + '</button>' : '') + '</td></tr>').join('') : emptyRow(6, 'Belum ada kasus', 'Rekam kasus klinik yang dibahas — JANGAN mencantumkan nama pasien.')}</tbody></table></div></div>`;
+  APP._kasForm = async (id, viewOnly) => {
+    const k = id ? kas.find(x => x.id === id) : null;
+    modal(viewOnly ? 'Detail Kasus ' + k.kode_anonim : (id ? 'Ubah' : 'Tambah') + ' Kasus (Anonim)', (viewOnly ? '<div class="kv"><span>Diagnosis</span><b>' + esc(k.diagnosis) + '</b><span>Tindakan</span><b>' + esc(k.tindakan) + '</b><span>Hasil</span><b>' + esc(k.hasil) + '</b></div><h4 style="margin:14px 0 6px;font-size:.86rem">Pembahasan</h4><p style="font-size:.84rem">' + esc(k.pembahasan || '—') + '</p>' :
+      '<form id="mForm"><div class="frow">' + field('Kode Anonim *', '<input name="kode_anonim" class="inp" required value="' + esc(k?.kode_anonim) + '" placeholder="mis. KAS-001">') + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + field('Usia (tahun)', '<input name="usia" type="number" min="0" class="inp" value="' + (k?.usia ?? '') + '">') + field('Jenis Kelamin', selHtml('jenis_kelamin', ['L', 'P'], k?.jenis_kelamin)) + '</div></div>' + field('Diagnosis *', '<input name="diagnosis" class="inp" required value="' + esc(k?.diagnosis) + '">') + '<div class="frow">' + field('Tindakan', '<input name="tindakan" class="inp" value="' + esc(k?.tindakan) + '">') + field('Hasil', '<input name="hasil" class="inp" value="' + esc(k?.hasil) + '">') + '</div>' + field('Pembahasan', '<textarea name="pembahasan" class="inp">' + esc(k?.pembahasan) + '</textarea>') + '<p style="font-size:.72rem;color:var(--amber-tx);background:var(--amber-bg);padding:8px 11px;border-radius:8px">Anonimisasi: gunakan kode, tanpa nama/alamat/NIK pasien.</p></form>'),
+      viewOnly ? '<button class="btn btn-o" data-action="modal-close">Tutup</button>' : '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>');
+    if (!viewOnly) $('#mSave').onclick = async () => { const f = $('#mForm'); const obj = { kode_anonim: fd(f, 'kode_anonim'), usia: +fd(f, 'usia') || null, jenis_kelamin: fd(f, 'jenis_kelamin'), diagnosis: fd(f, 'diagnosis'), tindakan: fd(f, 'tindakan'), hasil: fd(f, 'hasil'), pembahasan: fd(f, 'pembahasan') }; if (!obj.kode_anonim || !obj.diagnosis) { toast('Kode anonim dan diagnosis wajib diisi.', 'err'); return; }
+      try { if (id) { await DB.update('kasus', id, obj, k); toast('Kasus diperbarui.'); } else { await DB.insert('kasus', { jadwal_id: j.id, ...obj }); toast('Kasus tersimpan.'); } closeModal(); vDetailRefresh(); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); } };
+  };
+  APP._kasDel = id => confirmDlg('Hapus kasus ini?', async () => { const k = kas.find(x => x.id === id); await DB.remove('kasus', id, k); toast('Kasus dihapus.'); vDetailRefresh(); }, true);
+}
+</script>
+<script>
+/* ---- TAB TEMUAN ---- */
+const TFORM = (k) => '<form id="mForm"><div class="frow">' + field('Kategori Temuan *', selHtml('kategori', KATEGORI_TEMUAN, k?.kategori)) + field('Tingkat Risiko *', selHtml('risiko', Object.keys(RISIKO), k?.risiko || 'SEDANG')) + '</div>' + field('Uraian Temuan *', '<textarea name="uraian" class="inp" required style="min-height:90px">' + esc(k?.uraian) + '</textarea>') + field('Bukti / Referensi', '<input name="bukti" class="inp" value="' + esc(k?.bukti) + '" placeholder="mis. Catatan observasi, foto, berkas">') + field('Rekomendasi Perbaikan *', '<textarea name="rekomendasi" class="inp" required>' + esc(k?.rekomendasi) + '</textarea>') + '<div class="frow">' + field('Penanggung Jawab *', '<input name="penanggung_jawab" class="inp" required value="' + esc(k?.penanggung_jawab) + '" placeholder="mis. Kepala Puskesmas">') + field('Batas Waktu *', '<input name="batas_waktu" type="date" class="inp" required value="' + (k?.batas_waktu || '') + '">') + '</div></form>';
+const TSAVE = f => ({ kategori: fd(f, 'kategori'), risiko: fd(f, 'risiko'), uraian: fd(f, 'uraian'), bukti: fd(f, 'bukti'), rekomendasi: fd(f, 'rekomendasi'), penanggung_jawab: fd(f, 'penanggung_jawab'), batas_waktu: fd(f, 'batas_waktu'), status: 'DITINDAKLANJUTI' });
+const TVAL = o => !o.kategori || !o.uraian || !o.rekomendasi || !o.penanggung_jawab || !o.batas_waktu ? 'Lengkapi kolom bertanda *.' : null;
+async function detTemuan(j, box) {
+  const tem = (await ref('temuan', true)).filter(t => t.jadwal_id === j.id);
+  const canEdit = can('createTemuan');
+  box.innerHTML = `<div class="card"><div class="card-h"><h3>Temuan Supervisi</h3><span class="badge b-red">${tem.filter(t => t.risiko === 'TINGGI').length} risiko tinggi</span><span class="badge b-teal" style="margin-left:6px">${tem.length} total</span>${canEdit ? '<button class="btn btn-p btn-s" style="margin-left:auto" data-action="tem-add">' + SVG.plus + 'Catat Temuan</button>' : ''}</div>
+  <div class="tbl-wrap"><table><thead><tr><th>Kategori</th><th>Uraian</th><th>Risiko</th><th>Rekomendasi</th><th>PJ</th><th>Batas Waktu</th><th style="text-align:right">Aksi</th></tr></thead><tbody>
+  ${tem.length ? tem.map(t => '<tr><td><span class="badge b-violet">' + esc(t.kategori) + '</span></td><td style="max-width:240px;font-size:.78rem">' + esc(t.uraian) + '</td><td>' + badge(RISIKO, t.risiko) + '</td><td style="max-width:200px;font-size:.78rem">' + esc(t.rekomendasi) + '</td><td style="font-size:.78rem">' + esc(t.penanggung_jawab) + '</td><td>' + dID(t.batas_waktu) + '</td><td style="white-space:nowrap;text-align:right">' + '<button class="btn btn-o btn-s" data-action="rtl-from-tem" data-id="' + t.id + '">' + SVG.loop + 'RTL</button>' + (canEdit ? '<button class="icon-act" data-action="tem-edit" data-id="' + t.id + '">' + SVG.pen + '</button><button class="icon-act del" data-action="tem-del" data-id="' + t.id + '">' + SVG.trash + '</button>' : '') + '</td></tr>').join('') : emptyRow(7, 'Belum ada temuan', 'Catat temuan hasil supervisi untuk ditindaklanjuti.')}</tbody></table></div></div>`;
+  APP._temForm = async id => { const t = id ? tem.find(x => x.id === id) : null; modal(id ? 'Ubah Temuan' : 'Catat Temuan', TFORM(t), '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>'); $('#mSave').onclick = async () => { const f = $('#mForm'); const obj = TSAVE(f); const v = TVAL(obj); if (v) { toast(v, 'err'); return; } try { if (id) { await DB.update('temuan', id, obj, t); toast('Temuan diperbarui.'); } else { await DB.insert('temuan', { jadwal_id: j.id, ...obj }); notify('Temuan baru dicatat', obj.kategori + ' — risiko ' + RISIKO[obj.risiko].l + ' di ' + j.judul, obj.risiko === 'TINGGI' ? 'PERINGATAN' : 'INFO', 'temuan'); toast('Temuan tersimpan & notifikasi terkirim.'); } closeModal(); vDetailRefresh(); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); } }; };
+  APP._temDel = id => confirmDlg('Hapus temuan ini? RTL terkait juga ikut dihapus.', async () => { const t = tem.find(x => x.id === id); const rtlL = await ref('rtl'); for (const r of rtlL.filter(r => r.temuan_id === id)) await DB.remove('rtl', r.id); await DB.remove('temuan', id, t); toast('Temuan dihapus.'); vDetailRefresh(); }, true);
+}
+/* ---- TAB REKOMENDASI ---- */
+async function detRekomendasi(j, box) {
+  const rek = (await ref('rekomendasi', true)).filter(r => r.jadwal_id === j.id);
+  const canEdit = can('createTemuan');
+  box.innerHTML = `<div class="card"><div class="card-h"><h3>Rekomendasi Pembinaan</h3><span class="badge b-teal">${rek.length} rekomendasi</span>${canEdit ? '<button class="btn btn-p btn-s" style="margin-left:auto" data-action="rek-add">' + SVG.plus + 'Tambah Rekomendasi</button>' : ''}</div>
+  <div style="display:grid;gap:12px;padding:18px">${rek.length ? rek.map((r, i) => `<div style="border:1px solid var(--line);border-radius:12px;padding:15px 17px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge b-teal">#${i + 1}</span><b style="font-size:.9rem">${esc(r.masalah)}</b><span style="margin-left:auto;font-size:.7rem;color:var(--tx3)">Target: ${dID(r.target)}</span>${canEdit ? '<button class="icon-act" data-action="rek-edit" data-id="' + r.id + '">' + SVG.pen + '</button><button class="icon-act del" data-action="rek-del" data-id="' + r.id + '">' + SVG.trash + '</button>' : ''}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;font-size:.8rem">
+      <div style="background:#fff7ed;border-radius:10px;padding:10px 12px"><small style="color:var(--amber-tx);font-weight:700">AKAR MASALAH</small><div style="margin-top:3px">${esc(r.akar_masalah || '—')}</div></div>
+      <div style="background:var(--teal-50);border-radius:10px;padding:10px 12px"><small style="color:var(--teal-800);font-weight:700">REKOMENDASI</small><div style="margin-top:3px">${esc(r.isi)}</div></div>
+      <div style="font-size:.76rem;color:var(--tx2)">👤 ${esc(r.penanggung_jawab || '—')}</div>
+      <div style="font-size:.76rem;color:var(--tx2)">🎯 Indikator: ${esc(r.indikator || '—')}</div>
+    </div></div>`).join('') : '<div class="empty">' + SVG.dash + '<b>Belum ada rekomendasi</b><span>Rumuskan rekomendasi berbasis akar masalah.</span></div>'}</div></div>`;
+  APP._rekForm = async id => { const r = id ? rek.find(x => x.id === id) : null; modal(id ? 'Ubah Rekomendasi' : 'Tambah Rekomendasi', '<form id="mForm">' + field('Masalah *', '<input name="masalah" class="inp" required value="' + esc(r?.masalah) + '">') + field('Akar Masalah', '<textarea name="akar_masalah" class="inp">' + esc(r?.akar_masalah) + '</textarea>') + field('Rekomendasi *', '<textarea name="isi" class="inp" required>' + esc(r?.isi) + '</textarea>') + '<div class="frow">' + field('Penanggung Jawab *', '<input name="penanggung_jawab" class="inp" required value="' + esc(r?.penanggung_jawab) + '">') + field('Target Waktu *', '<input name="target" type="date" class="inp" required value="' + (r?.target || '') + '">') + '</div>' + field('Indikator Keberhasilan', '<input name="indikator" class="inp" value="' + esc(r?.indikator) + '" placeholder="mis. 100% SOP diperbarui">') + '</form>', '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>'); $('#mSave').onclick = async () => { const f = $('#mForm'); const obj = { masalah: fd(f, 'masalah'), akar_masalah: fd(f, 'akar_masalah'), isi: fd(f, 'isi'), penanggung_jawab: fd(f, 'penanggung_jawab'), target: fd(f, 'target'), indikator: fd(f, 'indikator'), status: 'BERJALAN' }; if (!obj.masalah || !obj.isi || !obj.penanggung_jawab || !obj.target) { toast('Lengkapi kolom bertanda *.', 'err'); return; } try { if (id) { await DB.update('rekomendasi', id, obj, r); toast('Rekomendasi diperbarui.'); } else { await DB.insert('rekomendasi', { jadwal_id: j.id, ...obj }); toast('Rekomendasi tersimpan.'); } closeModal(); vDetailRefresh(); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); } }; };
+  APP._rekDel = id => confirmDlg('Hapus rekomendasi ini?', async () => { const r = rek.find(x => x.id === id); await DB.remove('rekomendasi', id, r); toast('Rekomendasi dihapus.'); vDetailRefresh(); }, true);
+}
+/* ---- TAB RTL ---- */
+async function detRTL(j, box) {
+  const rtlL = (await ref('rtl', true)).filter(r => r.jadwal_id === j.id);
+  const ver = await ref('verifikasi_rtl');
+  box.innerHTML = `<div class="card"><div class="card-h"><h3>Rencana Tindak Lanjut</h3><span class="badge b-teal">${rtlL.length} RTL</span>${can('createRTL') ? '<button class="btn btn-p btn-s" style="margin-left:auto" data-action="rtl-add" data-j="' + j.id + '">' + SVG.plus + 'Buat RTL</button>' : ''}</div>
+  ${rtlL.length ? rtlL.map(r => { const v = ver.filter(x => x.rtl_id === r.id).sort((a, b) => String(b.created_at).localeCompare(a.created_at))[0]; const late = r.batas_waktu < today() && ['BELUM_DIMULAI', 'DALAM_PROSES'].includes(r.status); return '<div style="padding:14px 18px;border-bottom:1px solid #eef3f2"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:.88rem;flex:1;min-width:200px">' + esc(r.judul) + '</b>' + badge(RTL_STATUS, late && ['BELUM_DIMULAI', 'DALAM_PROSES'].includes(r.status) ? 'TERLAMBAT' : r.status) + (v ? '<span class="badge ' + (v.keputusan === 'DISETUJUI' ? 'b-green' : 'b-amber') + '">Verifikasi: ' + v.keputusan + '</span>' : '<span class="badge b-gray">Menunggu verifikasi</span>') + '</div><div style="font-size:.76rem;color:var(--tx2);margin-top:5px">👤 ' + esc(r.penanggung_jawab) + ' • ⏰ Batas: ' + dID(r.batas_waktu) + (late ? ' <b style="color:var(--red)">(terlambat)</b>' : '') + '</div><div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap">' + (can('updateRTL') && !['TERVERIFIKASI'].includes(r.status) ? '<button class="btn btn-o btn-s" data-action="rtl-status" data-id="' + r.id + '" data-st="DALAM_PROSES">Mulai Proses</button><button class="btn btn-o btn-s" data-action="rtl-status" data-id="' + r.id + '" data-st="SELESAI">Tandai Selesai</button>' : '') + (can('verifRTL') && r.status === 'SELESAI' ? '<button class="btn btn-p btn-s" data-action="rtl-verif" data-id="' + r.id + '">Verifikasi</button>' : '') + '<button class="icon-act" data-action="rtl-hist" data-id="' + r.id + '" title="Riwayat verifikasi">' + SVG.hist + '</button><button class="icon-act del" data-action="rtl-del" data-id="' + r.id + '">' + SVG.trash + '</button></div></div>'; }).join('') : '<div class="empty">' + SVG.loop + '<b>Belum ada RTL</b><span>Buat RTL dari tab Temuan atau tombol di atas.</span></div>'}</div>`;
+}
+/* ---- TAB DOKUMENTASI ---- */
+async function detDokumentasi(j, box) {
+  const dok = (await ref('dokumentasi', true)).filter(d => d.jadwal_id === j.id);
+  const canEdit = can('uploadDok');
+  box.innerHTML = `<div class="card"><div class="card-h"><h3>Dokumentasi Kegiatan</h3><span class="badge b-teal">${dok.length} berkas</span>${canEdit ? '<button class="btn btn-p btn-s" style="margin-left:auto" data-action="dok-add" data-j="' + j.id + '">' + SVG.plus + 'Unggah Berkas</button>' : ''}</div>
+  ${dok.length ? '<div class="tbl-wrap"><table><thead><tr><th>Nama</th><th>Jenis</th><th>Deskripsi</th><th>Diunggah</th><th style="text-align:right">Aksi</th></tr></thead><tbody>' + dok.map(d => '<tr><td><b>' + esc(d.nama) + '</b></td><td><span class="badge b-gray">' + esc(d.jenis) + '</span></td><td style="font-size:.78rem">' + esc(d.deskripsi || '—') + '</td><td style="font-size:.76rem">' + dID(d.created_at) + '</td><td style="text-align:right;white-space:nowrap"><a class="btn btn-o btn-s" href="' + esc(d.file_url || '#') + '" target="_blank" rel="noopener">' + SVG.dl + 'Lihat</a><button class="icon-act del" data-action="dok-del" data-id="' + d.id + '">' + SVG.trash + '</button></td></tr>').join('') + '</tbody></table></div>' : '<div class="empty">' + SVG.folder + '<b>Belum ada dokumentasi</b><span>Unggah foto, dokumen, materi, atau bukti RTL.</span></div>'}</div>`;
+}
+APP._dokAdd = async jid => {
+  const j = (await ref('jadwal')).find(x => x.id === jid);
+  modal('Unggah Dokumentasi — ' + esc(j.judul), '<form id="mForm">' + '<div class="frow">' + field('Jenis *', selHtml('jenis', JENIS_DOK)) + field('Berkas *', '<input name="file" type="file" class="inp" required accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv">') + '</div>' + field('Nama *', '<input name="nama" class="inp" required placeholder="Nama berkas yang tampil">') + field('Deskripsi', '<textarea name="deskripsi" class="inp"></textarea>') + '</form>', '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Unggah</button>', true);
+  $('#mSave').onclick = async () => {
+    const f = $('#mForm'); const file = f.querySelector('[name=file]').files[0];
+    if (!file) { toast('Pilih berkas terlebih dahulu.', 'err'); return; }
+    try {
+      toast('Mengunggah...');
+      const url = await DB.upload(file, 'dok/' + Date.now() + '-' + file.name.replace(/[^\w.\-]/g, '_'));
+      await DB.insert('dokumentasi', { jadwal_id: jid, jenis: fd(f, 'jenis'), nama: fd(f, 'nama') || file.name, deskripsi: fd(f, 'deskripsi'), file_url: url, uploaded_by: APP.session.nama });
+      toast('Dokumentasi tersimpan di ' + (IS_DEMO() ? 'browser (demo).' : 'Supabase Storage.'));
+      closeModal(); vDetailRefresh();
+    } catch (e) { toast('Gagal mengunggah: ' + (e.message || e), 'err'); }
+  };
+};
+APP._dokDel = async id => { const d = (await ref('dokumentasi')).find(x => x.id === id); confirmDlg('Hapus berkas "' + d?.nama + '"?', async () => { await DB.remove('dokumentasi', id, d); toast('Dokumentasi dihapus.'); vDetailRefresh(); }, true); };
+function vDetailRefresh() { return vDetail(); }
+/* ---- BERITA ACARA ---- */
+APP._baOpen = async jid => {
+  const j = (await ref('jadwal')).find(x => x.id === jid);
+  const [ps, tk, tem, rek, nil] = await Promise.all([ref('peserta'), ref('tenaga_kesehatan'), ref('temuan'), ref('rekomendasi'), ref('penilaian')]);
+  const baL = await ref('berita_acara'); const ba = baL.find(b => b.jadwal_id === jid);
+  const pes = ps.filter(p => p.jadwal_id === jid).map(p => tk.find(x => x.id === p.tenaga_id)?.nama).filter(Boolean);
+  const temJ = tem.filter(t => t.jadwal_id === jid); const rekJ = rek.filter(r => r.jadwal_id === jid);
+  const nilJ = nil.filter(n => n.jadwal_id === jid && n.skor); const avg = nilJ.length ? (nilJ.reduce((s, n) => s + n.skor, 0) / nilJ.length).toFixed(2) : '-';
+  const pkmN = (await refPkm(j.puskesmas_id) || {}).nama || '-'; const prsN = (await refPrs(j.perseptor_id) || {}).nama || '-';
+  const draft = ba?.isi || 'BERITA ACARA PEMBIMBINGAN DAN SUPERVISI KLINIK\nNomor: BA-____/PERSEPTOR/DKK/__/' + new Date().getFullYear() + '\n\nPada hari ini, ' + new Date(j.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ', telah dilaksanakan kegiatan pembimbingan dan supervisi klinik dengan rincian:\n\n1. Judul Kegiatan : ' + j.judul + '\n2. Metode        : ' + j.metode + '\n3. Lokasi        : ' + (j.lokasi || pkmN) + '\n4. Puskesmas     : ' + pkmN + '\n5. Perseptor     : ' + prsN + '\n6. Peserta       : ' + (pes.join(', ') || '-') + '\n7. Rata-rata Penilaian : ' + avg + ' dari skala 1-5' + (temJ.length ? '\n8. Temuan        : ' + temJ.length + ' temuan (' + temJ.map(t => t.kategori).join(', ') + ')' : '') + (rekJ.length ? '\n9. Rekomendasi   : ' + rekJ.length + ' rekomendasi tindak lanjut' : '') + '\n\nDemikian berita acara ini dibuat dengan sebenarnya untuk dipergunakan sebagaimana mestinya.';
+  modal('Berita Acara — ' + esc(j.judul), '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">' + field('Nomor', '<input id="baNomor" class="inp" value="' + esc(ba?.nomor || '') + '" placeholder="BA-001/PERSEPTOR/DKK/IX/2026">') + '</div><textarea id="baIsi" class="inp" style="min-height:300px;font-family:ui-monospace,monospace;font-size:.8rem;white-space:pre-wrap">' + esc(draft) + '</textarea>', '<button class="btn btn-o" data-action="modal-close">Tutup</button><button class="btn btn-o" id="baPrint">' + SVG.print + 'Cetak / PDF</button>' + (can('setStatus') || IS_DEMO() ? '<button class="btn btn-p" id="baSave">Simpan</button>' : ''), true);
+  $('#baPrint').onclick = () => {
+    const isi = $('#baIsi').value; const nomor = $('#baNomor').value || 'BA-____/PERSEPTOR';
+    printHTML('<div class="p-title">Berita Acara Pembimbingan dan Supervisi Klinik</div><div class="p-sub">Nomor: ' + esc(nomor) + '</div><hr><div style="white-space:pre-wrap;font-size:11pt;line-height:1.6">' + esc(isi) + '</div><hr><div class="sig"><div><p>Mengetahui,</p><p>Kepala ' + esc(pkmN) + '</p><br><br><br><p>(________________________)</p></div><div><p>' + esc(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })) + '</p><p>Perseptor,</p><br><br><br><p>(' + esc(prsN) + ')</p></div></div>');
+  };
+  if ($('#baSave')) $('#baSave').onclick = async () => {
+    try { const nomor = $('#baNomor').value, isi = $('#baIsi').value; if (!nomor) { toast('Isi nomor berita acara.', 'err'); return; }
+      if (ba) await DB.update('berita_acara', ba.id, { nomor, isi, status: 'FINAL' }, ba); else await DB.insert('berita_acara', { jadwal_id: jid, nomor, isi, status: 'FINAL', created_by: APP.session.id || null });
+      toast('Berita acara tersimpan.'); closeModal(); vDetailRefresh();
+    } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); }
+  };
+};
+/* ---- QR ---- */
+APP._qrShow = async jid => {
+  const j = (await ref('jadwal')).find(x => x.id === jid);
+  const payload = 'PERSEPTOR|' + j.id + '|' + j.judul + '|' + j.tanggal + '|' + j.jam_mulai + '-' + j.jam_selesai;
+  modal('QR Kegiatan', '<div style="text-align:center"><div id="qrBox" class="qr-box"></div><p style="font-size:.78rem;color:var(--tx2);margin-top:10px"><b>' + esc(j.judul) + '</b><br>' + dID(j.tanggal) + ' • ' + j.jam_mulai + '–' + j.jam_selesai + ' WIB<br><span style="font-size:.68rem">Pindai untuk verifikasi kehadiran (fitur esensi)</span></p></div>', '<button class="btn btn-o" data-action="modal-close">Tutup</button><button class="btn btn-p" id="qrPrint">' + SVG.print + 'Cetak</button>');
+  new QRCode($('#qrBox'), { text: payload, width: 190, height: 190, colorDark: '#134e4a', colorLight: '#ffffff' });
+  $('#qrPrint').onclick = () => printHTML('<div class="p-title">QR Kegiatan Pembimbingan</div><hr><div style="text-align:center">' + $('#qrBox').innerHTML + '<p style="font-size:12pt;margin-top:6mm"><b>' + esc(j.judul) + '</b><br>' + dID(j.tanggal, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ' • ' + j.jam_mulai + '–' + j.jam_selesai + ' WIB<br>' + esc((await0(j)) || '') + '</p></div>');
+  function await0(x) { return ''; }
+};
+</script>
+<script>
+/* ================= TEMUAN GLOBAL ================= */
+async function vTemuan() {
+  const [tem, jdw, pkm] = await Promise.all([ref('temuan', true), ref('jadwal'), ref('puskesmas')]);
+  let rows = tem;
+  const role = APP.session.role;
+  if (role === 'PERSEPTOR') { const mine = new Set(jdw.filter(j => j.perseptor_id === APP.session.perseptor_id).map(j => j.id)); rows = rows.filter(t => mine.has(t.jadwal_id)); }
+  if (role === 'ADMIN_PUSKESMAS') { const mine = new Set(jdw.filter(j => j.puskesmas_id === APP.session.puskesmas_id).map(j => j.id)); rows = rows.filter(t => mine.has(t.jadwal_id)); }
+  if (role === 'PESERTA') { const mine = new Set(jdw.filter(j => j.puskesmas_id === APP.session.puskesmas_id).map(j => j.id)); rows = rows.filter(t => mine.has(t.jadwal_id)); }
+  const F = APP.filters.tem = APP.filters.tem || { risiko: '', kat: '' };
+  $('#content').innerHTML = `
+  <div class="page-h"><div><h2>Temuan Supervisi</h2><p>Seluruh temuan hasil pembimbingan lintas Puskesmas, lengkap dengan tingkat risiko dan rekomendasi.</p></div></div>
+  <div class="filters">
+    <select data-f="risiko"><option value="">Semua Risiko</option>${Object.entries(RISIKO).map(([k, v]) => '<option value="' + k + '"' + (F.risiko === k ? ' selected' : '') + '>' + v.l + '</option>').join('')}</select>
+    <select data-f="kat"><option value="">Semua Kategori</option>${KATEGORI_TEMUAN.map(k => '<option value="' + k + '"' + (F.kat === k ? ' selected' : '') + '>' + k + '</option>').join('')}</select>
+    <input id="mQ" class="inp" style="max-width:220px" placeholder="Cari...">
+    <button class="btn btn-o" data-action="tem-csv">${SVG.dl}Ekspor CSV</button>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Kegiatan</th><th>Puskesmas</th><th>Kategori</th><th>Uraian</th><th>Risiko</th><th>Batas Waktu</th><th style="text-align:right">Aksi</th></tr></thead><tbody id="mBody"></tbody></table></div></div>`;
+  const draw = q => {
+    let flt = rows;
+    if (F.risiko) flt = flt.filter(t => t.risiko === F.risiko);
+    if (F.kat) flt = flt.filter(t => t.kategori === F.kat);
+    if (q) flt = flt.filter(t => JSON.stringify(t).toLowerCase().includes(q.toLowerCase()));
+    flt = flt.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+    $('#mBody').innerHTML = flt.length ? flt.map(t => { const j = jdw.find(x => x.id === t.jadwal_id) || {}; return '<tr><td>' + dID(j.tanggal) + '</td><td><b style="font-size:.8rem">' + esc(j.judul || '—') + '</b></td><td>' + esc((pkm.find(p => p.id === j.puskesmas_id) || {}).nama || '—') + '</td><td><span class="badge b-violet">' + esc(t.kategori) + '</span></td><td style="max-width:230px;font-size:.78rem">' + esc(t.uraian) + '</td><td>' + badge(RISIKO, t.risiko) + '</td><td>' + dID(t.batas_waktu) + '</td><td style="white-space:nowrap;text-align:right"><button class="btn btn-o btn-s" data-action="rtl-from-tem" data-id="' + t.id + '">' + SVG.loop + 'RTL</button></td></tr>'; }).join('') : emptyRow(8, 'Tidak ada temuan', 'Coba ubah filter.');
+  };
+  draw('');
+  document.querySelectorAll('[data-f]').forEach(s => s.onchange = () => { F[s.dataset.f] = s.value; draw($('#mQ')?.value || ''); });
+  $('#mQ').oninput = e => draw(e.target.value);
+  APP._temCsv = () => { csvDownload('perseptor-temuan.csv', [['Tanggal Kegiatan', 'Kegiatan', 'Puskesmas', 'Kategori', 'Uraian', 'Risiko', 'Rekomendasi', 'PJ', 'Batas Waktu']].concat(rows.map(t => { const j = jdw.find(x => x.id === t.jadwal_id) || {}; return [j.tanggal, j.judul, (pkm.find(p => p.id === j.puskesmas_id) || {}).nama, t.kategori, t.uraian, t.risiko, t.rekomendasi, t.penanggung_jawab, t.batas_waktu]; }))); toast('CSV diunduh.'); };
+}
+/* ================= RTL GLOBAL + VERIFIKASI ================= */
+async function vRTL() {
+  const [rtlL, jdw, pkm, ver] = await Promise.all([ref('rtl', true), ref('jadwal'), ref('puskesmas'), ref('verifikasi_rtl')]);
+  let rows = rtlL;
+  const role = APP.session.role;
+  if (role === 'PERSEPTOR') { const mine = new Set(jdw.filter(j => j.perseptor_id === APP.session.perseptor_id).map(j => j.id)); rows = rows.filter(r => mine.has(r.jadwal_id)); }
+  if (['ADMIN_PUSKESMAS', 'PESERTA'].includes(role)) { const mine = new Set(jdw.filter(j => j.puskesmas_id === APP.session.puskesmas_id).map(j => j.id)); rows = rows.filter(r => mine.has(r.jadwal_id)); }
+  const effStatus = r => (r.batas_waktu < today() && ['BELUM_DIMULAI', 'DALAM_PROSES'].includes(r.status)) ? 'TERLAMBAT' : r.status;
+  const F = APP.filters.rtl = APP.filters.rtl || { st: '' };
+  const stat = (k, lbl) => '<button class="stat" data-action="rtl-filter" data-st="' + k + '"><span class="ic ic-' + { BELUM_DIMULAI: 'gray|', DALAM_PROSES: 'amber|', SELESAI: 'green|', TERVERIFIKASI: 'teal|', TERLAMBAT: 'red|' }[k].split('|')[0] === 'ic-' ? '' : '' + '">' + SVG.loop + '</span><span><b>' + rows.filter(r => effStatus(r) === k).length + '</b><span>' + lbl + '</span></span></button>';
+  $('#content').innerHTML = `
+  <div class="page-h"><div><h2>Rencana Tindak Lanjut (RTL)</h2><p>Memastikan setiap temuan memiliki tindak lanjut yang terukur hingga terverifikasi oleh perseptor.</p></div>
+  <div class="sp">${can('createRTL') ? '<button class="btn btn-p" data-action="rtl-add">' + SVG.plus + 'Buat RTL</button>' : ''}</div></div>
+  <div class="stats" style="grid-template-columns:repeat(5,1fr)">
+    ${['BELUM_DIMULAI', 'DALAM_PROSES', 'SELESAI', 'TERVERIFIKASI', 'TERLAMBAT'].map(k => { const ic = { BELUM_DIMULAI: 'gray', DALAM_PROSES: 'amber', SELESAI: 'green', TERVERIFIKASI: 'teal', TERLAMBAT: 'red' }[k]; const n = rows.filter(r => effStatus(r) === k).length; return '<button class="stat" data-action="rtl-filter" data-st="' + (F.st === k ? '' : k) + '" style="' + (F.st === k ? 'border-color:var(--teal-500)' : '') + '"><span class="ic ic-' + (ic === 'gray' ? 'teal' : ic) + '">' + (k === 'TERLAMBAT' ? SVG.alert : k === 'TERVERIFIKASI' ? SVG.ok2 : SVG.loop) + '</span><span><b>' + n + '</b><span>' + RTL_STATUS[k].l + '</span></span></button>'; }).join('')}
+  </div>
+  <div class="filters"><input id="mQ" class="inp" style="max-width:230px" placeholder="Cari..."><button class="btn btn-o" data-action="rtl-csv">${SVG.dl}Ekspor CSV</button></div>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>RTL</th><th>Kegiatan Asal</th><th>Puskesmas</th><th>PJ</th><th>Target</th><th>Status</th><th>Verifikasi</th><th style="text-align:right">Aksi</th></tr></thead><tbody id="mBody"></tbody></table></div></div>`;
+  const draw = q => {
+    let flt = rows;
+    if (F.st) flt = flt.filter(r => effStatus(r) === F.st);
+    if (q) flt = flt.filter(r => JSON.stringify(r).toLowerCase().includes(q.toLowerCase()));
+    flt = flt.slice().sort((a, b) => String(a.batas_waktu).localeCompare(String(b.batas_waktu)));
+    $('#mBody').innerHTML = flt.length ? flt.map(r => { const j = jdw.find(x => x.id === r.jadwal_id) || {}; const vAll = ver.filter(x => x.rtl_id === r.id).sort((a, b) => String(b.created_at).localeCompare(a.created_at)); const v = vAll[0]; const es = effStatus(r); return '<tr><td><b style="font-size:.82rem">' + esc(r.judul) + '</b><div style="font-size:.7rem;color:var(--tx3);max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.deskripsi || '') + '</div></td><td style="font-size:.78rem">' + esc(j.judul || '—') + '<div style="font-size:.68rem;color:var(--tx3)">' + dID(j.tanggal) + '</div></td><td style="font-size:.78rem">' + esc((pkm.find(p => p.id === j.puskesmas_id) || {}).nama || '—') + '</td><td style="font-size:.78rem">' + esc(r.penanggung_jawab) + '</td><td>' + dID(r.batas_waktu) + '</td><td>' + badge(RTL_STATUS, es) + '</td><td>' + (v ? '<span class="badge ' + (v.keputusan === 'DISETUJUI' ? 'b-green' : 'b-amber') + '">' + v.keputusan + '</span>' : '<span class="badge b-gray">MENUNGGU</span>') + '</td><td style="white-space:nowrap;text-align:right">' + (can('updateRTL') && !['TERVERIFIKASI', 'SELESAI'].includes(r.status) ? '<button class="btn btn-o btn-s" data-action="rtl-status" data-id="' + r.id + '" data-st="DALAM_PROSES">Proses</button><button class="btn btn-o btn-s" data-action="rtl-status" data-id="' + r.id + '" data-st="SELESAI">Selesai</button>' : '') + (can('verifRTL') && r.status === 'SELESAI' ? '<button class="btn btn-p btn-s" data-action="rtl-verif" data-id="' + r.id + '">Verifikasi</button>' : '') + '<button class="icon-act" title="Riwayat" data-action="rtl-hist" data-id="' + r.id + '">' + SVG.hist + '</button>' + (can('createRTL') ? '<button class="icon-act del" data-action="rtl-del" data-id="' + r.id + '">' + SVG.trash + '</button>' : '') + '</td></tr>'; }).join('') : emptyRow(8, 'Tidak ada RTL', F.st ? 'Coba hapus filter status.' : 'Buat RTL dari tab Temuan pada detail kegiatan.');
+  };
+  draw('');
+  $('#mQ').oninput = e => draw(e.target.value);
+  APP._rtlCsv = () => { const pkm2 = APP.cache.puskesmas || []; csvDownload('perseptor-rtl.csv', [['RTL', 'Kegiatan', 'Puskesmas', 'PJ', 'Batas Waktu', 'Status', 'Bukti']].concat(rows.map(r => { const j = jdw.find(x => x.id === r.jadwal_id) || {}; return [r.judul, j.judul, (pkm2.find(p => p.id === j.puskesmas_id) || {}).nama, r.penanggung_jawab, r.batas_waktu, effStatus(r), r.bukti]; }))); toast('CSV diunduh.'); };
+}
+/* ---- Handler RTL global (dipakai dari detail kegiatan maupun halaman RTL) ---- */
+APP._rtlForm = async (id, jadwalId, temuanId) => {
+  const [jdw2, tem] = await Promise.all([ref('jadwal', true), ref('temuan')]);
+  let rowsJ = jdw2; const role = APP.session.role;
+  if (role === 'PERSEPTOR') rowsJ = rowsJ.filter(j => j.perseptor_id === APP.session.perseptor_id);
+  if (['ADMIN_PUSKESMAS', 'PESERTA'].includes(role)) rowsJ = rowsJ.filter(j => j.puskesmas_id === APP.session.puskesmas_id);
+  const t = temuanId ? tem.find(x => x.id === temuanId) : null;
+  const j = jadwalId ? rowsJ.find(x => x.id === jadwalId) : (t ? rowsJ.find(x => x.id === t.jadwal_id) : null);
+  modal('Buat Rencana Tindak Lanjut', '<form id="mForm">' +
+    field('Kegiatan Asal *', selHtml('jadwal_id', rowsJ.slice(0, 60).map(x => ({ v: x.id, l: dID(x.tanggal) + ' — ' + x.judul })), j?.id)) +
+    field('Judul RTL *', '<input name="judul" class="inp" required value="' + esc(t ? t.rekomendasi : '') + '">') +
+    field('Deskripsi', '<textarea name="deskripsi" class="inp">' + esc(t ? 'Tindak lanjut atas temuan: ' + t.uraian : '') + '</textarea>') +
+    '<div class="frow">' + field('Penanggung Jawab *', '<input name="penanggung_jawab" class="inp" required value="' + esc(t?.penanggung_jawab || '') + '">') + field('Batas Waktu *', '<input name="batas_waktu" type="date" class="inp" required value="' + (t?.batas_waktu || '') + '">') + '</div>' +
+    field('Bukti / Catatan', '<textarea name="bukti" class="inp" placeholder="Tautan/foto kegiatan pembinaan, nota dinas, dsb."></textarea>') + '</form>',
+    '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Simpan</button>', true);
+  $('#mSave').onclick = async () => { const f = $('#mForm'); const obj = { jadwal_id: fd(f, 'jadwal_id'), judul: fd(f, 'judul'), deskripsi: fd(f, 'deskripsi'), penanggung_jawab: fd(f, 'penanggung_jawab'), batas_waktu: fd(f, 'batas_waktu'), bukti: fd(f, 'bukti'), status: 'BELUM_DIMULAI' }; if (!obj.jadwal_id || !obj.judul || !obj.penanggung_jawab || !obj.batas_waktu) { toast('Lengkapi kolom bertanda *.', 'err'); return; }
+    try { await DB.insert('rtl', { ...obj, temuan_id: temuanId || null }); notify('RTL dibuat', obj.judul + ' — batas waktu ' + dID(obj.batas_waktu), 'INFO', 'rtl'); toast('RTL tersimpan & notifikasi terkirim.'); closeModal(); go(APP.view === 'detail' ? 'detail' : 'rtl', APP.view === 'detail' ? { id: APP.params.id, tab: 'RTL' } : {}); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); } };
+};
+APP._rtlStatus = async (id, st) => { const r = (await ref('rtl')).find(x => x.id === id); confirmDlg('Ubah status RTL "' + r?.judul + '" menjadi ' + RTL_STATUS[st].l + '?', async () => { await DB.update('rtl', id, { status: st }, r); toast('Status RTL: ' + RTL_STATUS[st].l + '.'); refreshNotifDot(); go(APP.view === 'detail' ? 'detail' : 'rtl', APP.view === 'detail' ? { id: APP.params.id, tab: 'RTL' } : {}); }); };
+APP._rtlVerif = async id => {
+  const r = (await ref('rtl')).find(x => x.id === id);
+  modal('Verifikasi RTL', '<div class="kv" style="margin-bottom:14px"><span>RTL</span><b>' + esc(r.judul) + '</b><span>PJ</span><b>' + esc(r.penanggung_jawab) + '</b><span>Bukti</span><b>' + esc(r.bukti || '—') + '</b></div>' +
+    '<form id="mForm">' + field('Keputusan *', selHtml('keputusan', [{ v: 'DISETUJUI', l: 'Setujui — RTL valid dan tuntas' }, { v: 'REVISI', l: 'Minta perbaikan (revisi)' }])) + field('Catatan Verifikator', '<textarea name="catatan" class="inp" placeholder="Catatan keputusan..."></textarea>') + '</form>',
+    '<button class="btn btn-o" data-action="modal-close">Batal</button><button class="btn btn-p" id="mSave">Kirim Keputusan</button>');
+  $('#mSave').onclick = async () => { const f = $('#mForm'); const kd = fd(f, 'keputusan'); if (!kd) { toast('Pilih keputusan.', 'err'); return; }
+    try { await DB.insert('verifikasi_rtl', { rtl_id: id, verifier: APP.session.nama, keputusan: kd, catatan: fd(f, 'catatan') }); await DB.update('rtl', id, { status: kd === 'DISETUJUI' ? 'TERVERIFIKASI' : 'DALAM_PROSES' }, r); notify('RTL diverifikasi', r.judul + ' → ' + kd, kd === 'DISETUJUI' ? 'INFO' : 'PERINGATAN', 'rtl'); toast('Keputusan verifikasi tersimpan (riwayat tetap terjaga).'); closeModal(); go(APP.view === 'detail' ? 'detail' : 'rtl', APP.view === 'detail' ? { id: APP.params.id, tab: 'RTL' } : {}); } catch (e) { toast('Gagal: ' + (e.message || e), 'err'); } };
+};
+APP._rtlHist = async id => { const ver = (await ref('verifikasi_rtl')).filter(x => x.rtl_id === id).sort((a, b) => String(b.created_at).localeCompare(a.created_at)); const r = (await ref('rtl')).find(x => x.id === id); modal('Riwayat Verifikasi — ' + esc(r?.judul || ''), ver.length ? '<div class="timeline">' + ver.map(v => '<div class="tl-item"><b>' + v.keputusan + '</b> oleh ' + esc(v.verifier) + '<small>' + new Date(v.created_at).toLocaleString('id-ID') + '</small>' + (v.catatan ? '<div style="font-size:.8rem;margin-top:3px">' + esc(v.catatan) + '</div>' : '') + '</div>').join('') + '</div>' : '<div class="empty">' + SVG.hist + '<b>Belum ada verifikasi</b><span>Riwayat keputusan akan tercatat di sini.</span></div>', '<button class="btn btn-o" data-action="modal-close">Tutup</button>'); };
+APP._rtlDel = async id => { const r = (await ref('rtl')).find(x => x.id === id); confirmDlg('Hapus RTL "' + r?.judul + '"?', async () => { const ver = (await ref('verifikasi_rtl')).filter(v => v.rtl_id === id); for (const v of ver) await DB.remove('verifikasi_rtl', v.id); await DB.remove('rtl', id, r); toast('RTL dihapus.'); go('rtl'); }, true); };
+/* ================= LAPORAN ================= */
+async function vLaporan() {
+  const tipe = APP.params.tipe || 'pembimbingan';
+  $('#content').innerHTML = `
+  <div class="page-h"><div><h2>Laporan</h2><p>Laporan resmi untuk pimpinan — cetak PDF lewat dialog cetak browser, atau unduh CSV/Excel.</p></div>
+  <div class="sp"><button class="btn btn-o" data-action="lap-print">${SVG.print}Cetak / PDF</button><button class="btn btn-o" data-action="lap-csv">${SVG.dl}Unduh CSV / Excel</button></div></div>
+  <div class="tabs">${[['pembimbingan', 'Laporan Pembimbingan'], ['temuan', 'Laporan Temuan'], ['rtl', 'Laporan RTL'], ['perseptor', 'Laporan Perseptor']].map(x => '<button class="tab ' + (tipe === x[0] ? 'on' : '') + '" data-action="lap-tipe" data-t="' + x[0] + '">' + x[1] + '</button>').join('')}</div>
+  <div class="card" id="lapBox"><div class="card-b"><div class="sk" style="height:200px"></div></div></div>`;
+  await lapDraw(tipe);
+}
+async function lapData(tipe) {
+  const [jdw, pkm, prs, tem, rtlL, ver] = await Promise.all([ref('jadwal'), ref('puskesmas'), ref('perseptor'), ref('temuan'), ref('rtl'), ref('verifikasi_rtl')]);
+  let rows = jdw; const role = APP.session.role;
+  if (role === 'PERSEPTOR') rows = rows.filter(j => j.perseptor_id === APP.session.perseptor_id);
+  if (['ADMIN_PUSKESMAS', 'PESERTA'].includes(role)) rows = rows.filter(j => j.puskesmas_id === APP.session.puskesmas_id);
+  rows = rows.slice().sort((a, b) => String(b.tanggal).localeCompare(a.tanggal));
+  if (tipe === 'temuan') return { head: ['Tanggal', 'Kegiatan', 'Puskesmas', 'Kategori', 'Uraian', 'Risiko', 'Batas Waktu'], rows: rows.flatMap(j => tem.filter(t => t.jadwal_id === j.id).map(t => [dID(j.tanggal), j.judul, (pkm.find(p => p.id === j.puskesmas_id) || {}).nama, t.kategori, t.uraian, RISIKO[t.risiko]?.l, t.batas_waktu])) };
+  if (tipe === 'rtl') return { head: ['RTL', 'Kegiatan', 'Puskesmas', 'PJ', 'Batas Waktu', 'Status', 'Verifikasi Terakhir'], rows: rtlL.filter(r => rows.some(j => j.id === r.jadwal_id)).map(r => { const j = jdw.find(x => x.id === r.jadwal_id) || {}; const v = ver.filter(x => x.rtl_id === r.id)[0]; return [r.judul, j.judul || '', (pkm.find(p => p.id === j.puskesmas_id) || {}).nama || '', r.penanggung_jawab, r.batas_waktu, RTL_STATUS[r.status]?.l, v ? v.keputusan : 'MENUNGGU']; }) };
+  if (tipe === 'perseptor') return { head: ['Nama Perseptor', 'Profesi', 'Jumlah Kegiatan', 'Selesai', 'Aktif'], rows: prs.map(p => { const mine = rows.filter(j => j.perseptor_id === p.id); return [p.nama, p.profesi, mine.length, mine.filter(j => j.status === 'SELESAI').length, mine.filter(j => ['DIJADWALKAN', 'DIKONFIRMASI', 'BERLANGSUNG'].includes(j.status)).length]; }).filter(x => x[2] > 0) };
+  return { head: ['Tanggal', 'Judul Kegiatan', 'Puskesmas', 'Perseptor', 'Metode', 'Status'], rows: rows.map(j => [dID(j.tanggal), j.judul, (pkm.find(p => p.id === j.puskesmas_id) || {}).nama, (prs.find(p => p.id === j.perseptor_id) || {}).nama, j.metode, JADWAL_STATUS[j.status]?.l]) };
+}
+async function lapDraw(tipe) {
+  const d = await lapData(tipe);
+  $('#lapBox').innerHTML = '<div class="tbl-wrap"><table><thead><tr>' + d.head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + (d.rows.length ? d.rows.map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + d.head.length + '"><div class="empty">' + SVG.rep + '<b>Belum ada data untuk dilaporkan</b></div></td></tr>') + '</tbody></table></div><div class="card-b" style="border-top:1px solid var(--line);font-size:.72rem;color:var(--tx3)">Dicetak dari PERSEPTOR pada ' + new Date().toLocaleString('id-ID') + ' oleh ' + esc(APP.session.nama) + '</div>';
+  APP._lapTipe = tipe2 => go('laporan', { tipe: tipe2 });
+  APP._lapPrint = async () => { const d2 = await lapData(tipe); printHTML('<div class="p-title">PERSEPTOR — Laporan ' + ({ pembimbingan: 'Pembimbingan', temuan: 'Temuan Supervisi', rtl: 'Rencana Tindak Lanjut', perseptor: 'Kinerja Perseptor' }[tipe]) + '</div><div class="p-sub">Dinas Kesehatan Kabupaten — dicetak ' + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + '</div><hr><table><thead><tr>' + d2.head.map(h => '<th>' + h + '</th>').join('') + '</tr></thead><tbody>' + d2.rows.map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') + '</tbody></table><div class="sig"><div><p>Disusun oleh,</p><br><br><br><p>(' + esc(APP.session.nama) + ')</p></div><div><p>Mengetahui,</p><br><br><br><p>(________________________)</p></div></div>'); };
+  APP._lapCsv = () => { csvDownload('perseptor-laporan-' + tipe + '.csv', [d.head].concat(d.rows)); toast('CSV diunduh — dapat dibuka di Excel.'); };
+}
+/* ================= DOKUMENTASI GLOBAL ================= */
+async function vDokumentasi() {
+  const [dok, jdw] = await Promise.all([ref('dokumentasi', true), ref('jadwal')]);
+  let rows = dok; const role = APP.session.role;
+  if (role === 'PERSEPTOR') { const mine = new Set(jdw.filter(j => j.perseptor_id === APP.session.perseptor_id).map(j => j.id)); rows = rows.filter(d => mine.has(d.jadwal_id)); }
+  if (['ADMIN_PUSKESMAS', 'PESERTA'].includes(role)) { const mine = new Set(jdw.filter(j => j.puskesmas_id === APP.session.puskesmas_id).map(j => j.id)); rows = rows.filter(d => mine.has(d.jadwal_id)); }
+  $('#content').innerHTML = `
+  <div class="page-h"><div><h2>Dokumentasi</h2><p>Repositori berkas: foto kegiatan, instrumen, materi, berita acara, dan bukti RTL. Tersimpan di ${IS_DEMO() ? 'browser (mode demo)' : 'Supabase Storage'}.</p></div></div>
+  <div class="filters"><select id="dokJenis"><option value="">Semua Jenis</option>${JENIS_DOK.map(j => '<option>' + j + '</option>').join('')}</select><input id="mQ" class="inp" style="max-width:220px" placeholder="Cari..."></div>
+  <div id="dokBox"></div>`;
+  const draw = () => {
+    const q = ($('#mQ')?.value || '').toLowerCase(); const jen = $('#dokJenis').value;
+    let flt = rows; if (jen) flt = flt.filter(d => d.jenis === jen); if (q) flt = flt.filter(d => JSON.stringify(d).toLowerCase().includes(q));
+    $('#dokBox').innerHTML = flt.length ? '<div class="grid g3">' + flt.map(d => { const j = jdw.find(x => x.id === d.jadwal_id) || {}; return '<div class="card"><div class="card-b"><div style="display:flex;align-items:center;gap:8px"><span style="width:38px;height:38px;border-radius:10px;background:var(--teal-50);display:grid;place-items:center;color:var(--teal-700)">' + SVG.doc + '</span><div style="min-width:0"><b style="font-size:.84rem;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(d.nama) + '</b><span class="badge b-gray">' + esc(d.jenis) + '</span></div></div><p style="font-size:.76rem;color:var(--tx2);margin:9px 0 4px">' + esc(d.deskripsi || '—') + '</p><div style="font-size:.68rem;color:var(--tx3)">' + esc(j.judul || '—') + ' • ' + dID(d.created_at) + '</div><div style="display:flex;gap:7px;margin-top:10px"><a class="btn btn-o btn-s" href="' + esc(d.file_url || '#') + '" target="_blank" rel="noopener">' + SVG.dl + 'Lihat</a><button class="btn btn-d btn-s" data-action="dok-del" data-id="' + d.id + '">' + SVG.trash + 'Hapus</button></div></div></div>'; }).join('') + '</div>' : '<div class="card">' + emptyRow(1, 'Belum ada dokumentasi', 'Unggah berkas melalui tab Dokumentasi pada detail kegiatan.') + '</div>';
+  };
+  draw(); $('#mQ').oninput = draw; $('#dokJenis').onchange = draw;
+}
+/* ================= NOTIFIKASI ================= */
+async function vNotifikasi() {
+  const all = (await ref('notifikasi', true)).filter(n => n.user_email === 'all' || n.user_email === (APP.session.email || ''));
+  $('#content').innerHTML = `<div class="page-h"><div><h2>Notifikasi</h2><p>Pemberitahuan perubahan jadwal, temuan, dan status RTL. (Integrasi WhatsApp/email: pengembangan lanjutan.)</p></div>
+  <div class="sp"><button class="btn btn-o" data-action="notif-readall">${SVG.ok2}Tandai semua dibaca</button></div></div>
+  <div class="card"><div style="padding:8px 0">${all.length ? all.map(n => '<div style="display:flex;gap:13px;padding:14px 20px;border-bottom:1px solid #eef3f2;align-items:flex-start;opacity:' + (n.dibaca ? '.62' : '1') + '"><span style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:' + (n.tipe === 'PERINGATAN' ? 'var(--amber-bg);color:var(--amber)' : 'var(--teal-100);color:var(--teal-700)') + '">' + (n.tipe === 'PERINGATAN' ? SVG.alert : SVG.bell) + '</span><div style="flex:1;min-width:0"><b style="font-size:.87rem">' + esc(n.judul) + '</b><div style="font-size:.8rem;color:var(--tx2)">' + esc(n.pesan) + '</div><small style="font-size:.68rem;color:var(--tx3)">' + new Date(n.created_at).toLocaleString('id-ID') + '</small></div>' + (!n.dibaca ? '<button class="btn btn-o btn-s" data-action="notif-read" data-id="' + n.id + '">Dibaca</button>' : '') + '</div>').join('') : '<div class="empty">' + SVG.bell + '<b>Tidak ada notifikasi</b><span>Semua sudah dibaca.</span></div>'}</div></div>`;
+  APP._notifRead = async id => { const n = all.find(x => x.id === id); await DB.update('notifikasi', id, { dibaca: true }, n); refreshNotifDot(); go('notifikasi'); };
+  APP._notifReadAll = async () => { for (const n of all.filter(x => !x.dibaca)) await DB.update('notifikasi', n.id, { dibaca: true }, n); toast('Semua notifikasi ditandai dibaca.'); refreshNotifDot(); go('notifikasi'); };
+}
+/* ================= AUDIT TRAIL ================= */
+async function vAudit() {
+  const rows = (await ref('audit_log', true)).slice(0, 300);
+  $('#content').innerHTML = `<div class="page-h"><div><h2>Audit Trail</h2><p>Jejak seluruh aktivitas pengguna: siapa melakukan apa, kapan, dan data sebelum/sesudah perubahan.</p></div>
+  <div class="sp"><button class="btn btn-o" data-action="audit-csv">${SVG.dl}Ekspor CSV</button></div></div>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Waktu</th><th>Pengguna</th><th>Aksi</th><th>Entitas</th><th>Data</th></tr></thead><tbody>
+  ${rows.length ? rows.map(a => '<tr><td style="white-space:nowrap">' + new Date(a.created_at).toLocaleString('id-ID') + '</td><td><b>' + esc(a.user_nama || '—') + '</b></td><td><span class="badge ' + ({ TAMBAH: 'b-green', UBAH: 'b-amber', HAPUS: 'b-red' }[a.aksi] || 'b-gray') + '">' + a.aksi + '</span></td><td>' + esc(a.entitas) + '</td><td style="max-width:340px;font-size:.72rem;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc((a.data_baru || a.data_lama || '').slice(0, 120)) + '</td></tr>').join('') : emptyRow(5, 'Belum ada aktivitas')}</tbody></table></div></div>`;
+  APP._auditCsv = () => { csvDownload('perseptor-audit.csv', [['Waktu', 'Pengguna', 'Aksi', 'Entitas', 'Data Baru']].concat(rows.map(a => [new Date(a.created_at).toLocaleString('id-ID'), a.user_nama, a.aksi, a.entitas, a.data_baru]))); toast('CSV diunduh.'); };
+}
+</script>
+<script>
+/* ================= EVENT WIRING ================= */
+/* penjaga klik ganda pada tombol simpan modal (cegah data ganda) */
+document.addEventListener('click', e => {
+  const sb = e.target && e.target.closest && e.target.closest('.modal-f .btn-p, .modal-f #cfYes');
+  if (!sb) return;
+  if (sb.dataset.busy) { e.preventDefault(); e.stopPropagation(); return; }
+  sb.dataset.busy = '1';
+  setTimeout(() => { delete sb.dataset.busy; }, 1500);
+}, true);
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (e.target.closest('.modal-scrim') && !el && e.target.id === 'modalScrim') return closeModal();
+  if (!el) return;
+  const a = el.dataset.action, id = el.dataset.id;
+  switch (a) {
+    /* setup & auth */
+    case 'cfg-save': {
+      const url = $('#cfgUrl').value.trim(), key = $('#cfgKey').value.trim();
+      if (!url.startsWith('https://') || key.length < 30) { showErr('#cfgErr', 'URL harus https://xxxx.supabase.co dan anon key valid.'); return; }
+      try { supabase.createClient(url, key); } catch (err) { showErr('#cfgErr', 'Kredensial tidak valid: ' + err.message); return; }
+      localStorage.setItem(CFG_KEY, JSON.stringify({ url, anonKey: key })); localStorage.setItem('perseptor_mode', 'supabase'); location.reload(); break; }
+    case 'cfg-demo': localStorage.setItem('perseptor_mode', 'demo'); location.reload(); break;
+    case 'demo-login': (async () => { try { const u = await DemoBackend.login(el.dataset.email, el.dataset.pass); APP.session = u; enterApp(); toast('Selamat datang, ' + u.nama.split(',')[0] + '!'); } catch (err) { showErr('#loginErr', err.message); } })(); break;
+    /* nav */
+    case 'go': go(el.dataset.view); break;
+    case 'nav-open': $('#sidebar').classList.add('open'); document.querySelector('.scrim').classList.add('on'); break;
+    case 'nav-close': $('#sidebar').classList.remove('open'); document.querySelector('.scrim').classList.remove('on'); break;
+    case 'go-notif': go('notifikasi'); break;
+    case 'user-menu': modal('Profil Pengguna', '<div class="kv" style="margin-bottom:14px"><span>Nama</span><b>' + esc(APP.session.nama) + '</b><span>Email</span><b>' + esc(APP.session.email || '-') + '</b><span>Peran</span><b><span class="badge b-teal">' + ROLES[APP.session.role] + '</span></b><span>Backend</span><b>' + (IS_DEMO() ? 'Mode Demo (localStorage) — hubungkan Supabase untuk data permanen' : 'Supabase (permanen)') + '</b></div>' + (IS_DEMO() ? '<button class="btn btn-o btn-s" id="demoReset">' + SVG.loop + 'Reset data demo</button>' : ''), '<button class="btn btn-d" data-action="logout">Keluar</button><button class="btn btn-o" data-action="modal-close">Tutup</button>'); const dr = $('#demoReset'); if (dr) dr.onclick = () => { DemoBackend.seed(); toast('Data demo direset.'); closeModal(); go('dashboard'); }; break;
+    case 'logout': confirmDlg('Keluar dari sistem?', async () => { await DB.logout(); location.reload(); }); break;
+    case 'modal-close': closeModal(); break;
+    /* master */
+    case 'm-add': APP._mEdit && APP._mEdit(null); break;
+    case 'm-edit': APP._mEdit && APP._mEdit(id); break;
+    case 'm-del': APP._mDel && APP._mDel(id); break;
+    /* pemetaan */
+    case 'pm-add': APP._pmForm && APP._pmForm(null); break;
+    case 'pm-edit': APP._pmForm && APP._pmForm(id); break;
+    case 'pm-del': APP._pmDel && APP._pmDel(id); break;
+    /* program */
+    case 'pro-add': APP._proForm && APP._proForm(null, false); break;
+    case 'pro-edit': APP._proEdit && APP._proEdit(id); break;
+    case 'pro-dup': APP._proDup && APP._proDup(id); break;
+    case 'pro-del': APP._proDel && APP._proDel(id); break;
+    /* jadwal */
+    case 'jd-add': APP._jdForm && APP._jdForm(null); break;
+    case 'jd-mode': jadwalMode = el.dataset.m; vJadwal(); break;
+    case 'jd-open': APP.filters._from = APP.view; go('detail', { id }); break;
+    case 'jd-status': APP._jdSetStatus(id, el.dataset.st); break;
+    /* detail */
+    case 'det-tab': APP.params.tab = el.dataset.t; vDetail(); break;
+    case 'ba-open': APP._baOpen(id); break;
+    case 'qr-show': APP._qrShow(id); break;
+    case 'pes-add': APP._pesAdd && APP._pesAdd(); break;
+    case 'pes-edit': APP._pesEdit && APP._pesEdit(id); break;
+    case 'pes-del': APP._pesDel && APP._pesDel(id); break;
+    case 'nil-add': APP._nilForm && APP._nilForm(null); break;
+    case 'nil-edit': APP._nilForm && APP._nilForm(id); break;
+    case 'nil-del': APP._nilDel && APP._nilDel(id); break;
+    case 'obs-add': APP._obsAdd && APP._obsAdd(); break;
+    case 'obs-del': APP._obsDel && APP._obsDel(id); break;
+    case 'kas-add': APP._kasForm && APP._kasForm(null, false); break;
+    case 'kas-view': APP._kasForm && APP._kasForm(id, true); break;
+    case 'kas-edit': APP._kasForm && APP._kasForm(id, false); break;
+    case 'kas-del': APP._kasDel && APP._kasDel(id); break;
+    case 'tem-add': APP._temForm && APP._temForm(null); break;
+    case 'tem-edit': APP._temForm && APP._temForm(id); break;
+    case 'tem-del': APP._temDel && APP._temDel(id); break;
+    case 'tem-csv': APP._temCsv && APP._temCsv(); break;
+    case 'rek-add': APP._rekForm && APP._rekForm(null); break;
+    case 'rek-edit': APP._rekForm && APP._rekForm(id); break;
+    case 'rek-del': APP._rekDel && APP._rekDel(id); break;
+    case 'rtl-add': APP._rtlForm && APP._rtlForm(null, el.dataset.j || null, null); break;
+    case 'rtl-from-tem': APP._rtlForm && APP._rtlForm(null, null, id); break;
+    case 'rtl-status': APP._rtlStatus && APP._rtlStatus(id, el.dataset.st); break;
+    case 'rtl-verif': APP._rtlVerif && APP._rtlVerif(id); break;
+    case 'rtl-hist': APP._rtlHist && APP._rtlHist(id); break;
+    case 'rtl-del': APP._rtlDel && APP._rtlDel(id); break;
+    case 'rtl-filter': APP.filters.rtl.st = el.dataset.st; vRTL(); break;
+    case 'rtl-csv': APP._rtlCsv && APP._rtlCsv(); break;
+    case 'dok-add': APP._dokAdd(el.dataset.j); break;
+    case 'dok-del': APP._dokDel(id); break;
+    /* laporan, notif, audit */
+    case 'lap-tipe': go('laporan', { tipe: el.dataset.t }); break;
+    case 'lap-print': APP._lapPrint && APP._lapPrint(); break;
+    case 'lap-csv': APP._lapCsv && APP._lapCsv(); break;
+    case 'notif-read': APP._notifRead && APP._notifRead(id); break;
+    case 'notif-readall': APP._notifReadAll && APP._notifReadAll(); break;
+    case 'audit-csv': APP._auditCsv && APP._auditCsv(); break;
+  }
+});
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#gSearch') && $('#gSearch').focus(); }
+  if (e.key === 'Escape') { closeModal(); $('#gDrop').classList.remove('on'); }
+});
+/* form: login */
+document.addEventListener('submit', async e => {
+  if (e.target.dataset.form !== 'login') return;
+  e.preventDefault();
+  const email = $('#liEmail').value.trim(), pass = $('#liPass').value;
+  if (!email || !pass) { showErr('#loginErr', 'Isi email dan kata sandi.'); return; }
+  try {
+    const u = await DB.login(email, pass);
+    APP.session = u; enterApp(); toast('Selamat datang, ' + u.nama.split(',')[0] + '!');
+  } catch (err) { showErr('#loginErr', err.message || 'Gagal masuk.'); }
+});
+/* global search */
+let gsT;
+document.addEventListener('input', e => {
+  if (e.target.id !== 'gSearch') return;
+  clearTimeout(gsT);
+  const q = e.target.value.trim();
+  if (q.length < 2) { $('#gDrop').classList.remove('on'); return; }
+  gsT = setTimeout(() => gsearch(q), 220);
+});
+document.addEventListener('click', e => { if (!e.target.closest('.searchbox')) $('#gDrop') && $('#gDrop').classList.remove('on'); });
+async function gsearch(q) {
+  const [pkm, prs, tk, jdw, pro] = await Promise.all([ref('puskesmas'), ref('perseptor'), ref('tenaga_kesehatan'), ref('jadwal'), ref('program')]);
+  const ql = q.toLowerCase(); const out = [];
+  pkm.filter(x => (x.nama + ' ' + x.kecamatan).toLowerCase().includes(ql)).slice(0, 3).forEach(x => out.push(['Puskesmas', x.nama, x.kecamatan, "go-master('puskesmas')"]));
+  prs.filter(x => (x.nama + ' ' + x.area_keahlian).toLowerCase().includes(ql)).slice(0, 3).forEach(x => out.push(['Perseptor', x.nama, x.profesi, "go-master('perseptor')"]));
+  tk.filter(x => x.nama.toLowerCase().includes(ql)).slice(0, 3).forEach(x => out.push(['Tenaga Kesehatan', x.nama, x.profesi, "go-master('tenaga_kesehatan')"]));
+  jdw.filter(x => (x.judul + ' ' + x.tanggal).toLowerCase().includes(ql)).slice(0, 5).forEach(x => out.push(['Jadwal — ' + dID(x.tanggal), x.judul, JADWAL_STATUS[x.status]?.l, "go-detail('" + x.id + "')"]));
+  pro.filter(x => x.nama.toLowerCase().includes(ql)).slice(0, 2).forEach(x => out.push(['Program', x.nama, x.tahun, "go-view('program')"]));
+  const drop = $('#gDrop');
+  if (!out.length) { drop.innerHTML = '<div class="empty" style="padding:18px"><b>Tidak ditemukan</b><span>Coba kata kunci lain.</span></div>'; drop.classList.add('on'); return; }
+  drop.innerHTML = out.map(o => '<button class="sd-item" onclick="gnav(' + "'" + o[3] + "'" + ')"><small>' + esc(o[0]) + '</small><b>' + esc(o[1]) + '</b><small>' + esc(o[2]) + '</small></button>').join('');
+  drop.classList.add('on');
+}
+function gnav(expr) { $('#gDrop').classList.remove('on'); $('#gSearch').value = ''; eval(expr); }
+window.goDetail = id => go('detail', { id });
+window.goView = v => go(v);
+window.goMaster = v => go('master-' + v);
+/* ================= BOOT ================= */
+function enterApp() {
+  $('#loginScr').style.display = 'none'; $('#setupScr').style.display = 'none';
+  $('#app').classList.add('on');
+  $('#uNama').textContent = APP.session.nama; $('#uRole').textContent = ROLES[APP.session.role]; $('#uAva').textContent = initials(APP.session.nama);
+  renderNav(); go('dashboard');
+  if (IS_DEMO()) toast('MODE DEMO — data tersimpan di browser ini saja. Hubungkan Supabase untuk pemakaian resmi.');
+}
+async function boot() {
+  const mode = localStorage.getItem('perseptor_mode');
+  if (!CFG && mode !== 'demo') { $('#setupScr').style.display = 'grid'; return; }
+  APP.mode = mode || 'supabase';
+  if (APP.mode === 'demo') DemoBackend.init();
+  else { try { SupaBackend.init(CFG.url, CFG.anonKey); } catch (e) { $('#setupScr').style.display = 'grid'; return; } }
+  let me = null;
+  try { me = await DB.me(); } catch (e) { me = null; }
+  if (me) { APP.session = me; enterApp(); }
+  else {
+    $('#loginScr').style.display = 'grid';
+    $('#demoList').style.display = APP.mode === 'demo' ? 'block' : 'none';
+    $('#authFoot').innerHTML = APP.mode === 'demo' ? 'Mode Demo aktif — pilih akun di atas. <a href="#" onclick="localStorage.setItem(\'perseptor_mode\',\'supabase\');location.reload();return false">Gunakan Supabase</a>' : 'Belum punya akun? Buat melalui Supabase Authentication oleh superadmin.';
+  }
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+</script>
+</body>
+</html>
