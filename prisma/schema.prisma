@@ -1,0 +1,436 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ AUTH & USERS ============
+
+model Role {
+  id       String @id @default(cuid())
+  kode     String @unique // SUPERADMIN | ADMIN_DINAS | PERSEPTOR | ADMIN_PUSKESMAS | PESERTA
+  nama     String
+  deskripsi String?
+}
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  passwordHash     String
+  nama             String
+  role             String // SUPERADMIN | ADMIN_DINAS | PERSEPTOR | ADMIN_PUSKESMAS | PESERTA
+  puskesmasId      String?
+  perseptorId      String? @unique
+  tenagaKesehatanId String? @unique
+  aktif            Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  puskesmas        Puskesmas?          @relation("UserPuskesmas", fields: [puskesmasId], references: [id])
+  perseptor        Perseptor?          @relation("UserPerseptor", fields: [perseptorId], references: [id])
+  tenagaKesehatan  TenagaKesehatan?    @relation("UserTenagaKesehatan", fields: [tenagaKesehatanId], references: [id])
+  sessions         Session[]
+  notifications    Notification[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// ============ MASTER DATA ============
+
+model Puskesmas {
+  id              String   @id @default(cuid())
+  kode            String   @unique
+  nama            String
+  kecamatan       String
+  alamat          String?
+  kepalaPuskesmas String?
+  telepon         String?
+  email           String?
+  status          String   @default("AKTIF") // AKTIF | NONAKTIF
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenagaKesehatan TenagaKesehatan[]
+  pemetaan        Pemetaan[]
+  program         Program[]
+  jadwal          Jadwal[]
+  users           User[]            @relation("UserPuskesmas")
+  penugasan       PenugasanPerseptor[] @relation("PenugasanPuskesmas")
+  rtl             RTL[]             @relation("RTLPuskesmas")
+  dokumentasi     Dokumentasi[]     @relation("DokumentasiPuskesmas")
+}
+
+model Perseptor {
+  id           String   @id @default(cuid())
+  nama         String
+  nip          String?
+  profesi      String // Dokter | Bidan | Perawat | Apoteker | Nutrisionis | Sanitarian | dll
+  jabatan      String?
+  unitKerja    String?
+  kompetensi   String? // daftar area kompetensi (dipisah koma) - referensi Kompetensi
+  nomorSTR     String?
+  nomorSIP     String?
+  sertifikat   String?
+  areaKeahlian String?
+  statusAktif  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User?              @relation("UserPerseptor")
+  penugasan    PenugasanPerseptor[]
+  jadwal       Jadwal[]
+  program      Program[]
+}
+
+model PenugasanPerseptor {
+  id           String     @id @default(cuid())
+  perseptorId  String
+  puskesmasId  String
+  mulai        DateTime?
+  selesai      DateTime?
+  catatan      String?
+  createdAt    DateTime   @default(now())
+  perseptor    Perseptor  @relation(fields: [perseptorId], references: [id], onDelete: Cascade)
+  puskesmas    Puskesmas  @relation("PenugasanPuskesmas", fields: [puskesmasId], references: [id], onDelete: Cascade)
+}
+
+model TenagaKesehatan {
+  id          String   @id @default(cuid())
+  nama        String
+  nipNik      String?
+  profesi     String
+  jabatan     String?
+  unitKerja   String?
+  puskesmasId String?
+  kompetensi  String?
+  masaKerja   Int? // tahun
+  status      String   @default("AKTIF")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  puskesmas   Puskesmas?       @relation(fields: [puskesmasId], references: [id])
+  user        User?            @relation("UserTenagaKesehatan")
+  peserta     Peserta[]
+  penilaian   Penilaian[]
+  evaluasi    EvaluasiKompetensi[]
+}
+
+model Kompetensi {
+  id        String   @id @default(cuid())
+  kelompok  String // Klinis | Manajerial | Keselamatan Pasien | PPI | Kegawatdaruratan | Maternal Neonatal | Anak | Gizi | Kefarmasian | Laboratorium | Keperawatan | Kebidanan | Lainnya
+  nama      String
+  deskripsi String?
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  pemetaan  Pemetaan[]
+  evaluasi  EvaluasiKompetensi[]
+}
+
+// ============ PEMETAAN ============
+
+model Pemetaan {
+  id            String   @id @default(cuid())
+  puskesmasId   String
+  tahun         Int
+  kompetensiId  String?
+  kompetensiTeks String?
+  masalah       String?
+  kasusSering   String?
+  risiko        String?
+  kebutuhan     String?
+  skor          Int      @default(1) // 1-8 skor gabungan
+  prioritas     String   @default("SEDANG") // RENDAH | SEDANG | TINGGI | SANGAT_TINGGI
+  status        String   @default("DIPROSES") // DIPROSES | MASUK_PERENCANAAN | SELESAI
+  catatan       String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  puskesmas     Puskesmas @relation(fields: [puskesmasId], references: [id])
+  kompetensi    Kompetensi? @relation(fields: [kompetensiId], references: [id])
+}
+
+// ============ PROGRAM ============
+
+model Program {
+  id          String   @id @default(cuid())
+  nama        String
+  tahun       Int
+  periode     String   @default("TAHUNAN") // TAHUNAN | SEMESTER | BULANAN | KHUSUS | KASUS | KEBUTUHAN
+  jenis       String   @default("REGULER") // REGULER | KHUSUS | KASUS | KEBUTUHAN
+  puskesmasId String?
+  bidang      String?
+  topik       String?
+  tujuan      String?
+  perseptorId String?
+  sasaran     String?
+  prioritas   String   @default("SEDANG")
+  target      String?
+  status      String   @default("DRAFT") // DRAFT | AKTIF | SELESAI | DIBATALKAN
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  puskesmas   Puskesmas? @relation(fields: [puskesmasId], references: [id])
+  perseptor   Perseptor? @relation(fields: [perseptorId], references: [id])
+  jadwal      Jadwal[]
+}
+
+// ============ JADWAL & PELAKSANAAN ============
+
+model Jadwal {
+  id          String    @id @default(cuid())
+  programId   String?
+  puskesmasId String
+  perseptorId String
+  tanggal     DateTime
+  waktuMulai  String    @default("08:00")
+  waktuSelesai String   @default("12:00")
+  topik       String
+  tujuan      String?
+  status      String    @default("DIRENCANAKAN") // DIRENCANAKAN | DIJADWALKAN | DIKONFIRMASI | BERLANGSUNG | SELESAI | DITUNDA | DIBATALKAN
+  metode      String? // dipisah koma: Observasi langsung, Demonstrasi, ...
+  catatan     String?
+  qrToken     String    @unique @default(cuid())
+  keteranganTunda String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  program     Program?      @relation(fields: [programId], references: [id])
+  puskesmas   Puskesmas     @relation(fields: [puskesmasId], references: [id])
+  perseptor   Perseptor     @relation(fields: [perseptorId], references: [id])
+  peserta     Peserta[]
+  penilaian   Penilaian[]
+  kasus       Kasus[]
+  temuan      Temuan[]
+  rekomendasi Rekomendasi[]
+  dokumentasi Dokumentasi[]
+  beritaAcara BeritaAcara?
+}
+
+model Peserta {
+  id                String   @id @default(cuid())
+  jadwalId          String
+  tenagaKesehatanId String
+  hadir             Boolean  @default(false)
+  catatan           String?
+  jadwal            Jadwal           @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
+  tenagaKesehatan   TenagaKesehatan  @relation(fields: [tenagaKesehatanId], references: [id])
+}
+
+// ============ INSTRUMEN & PENILAIAN ============
+
+model InstrumenTemplate {
+  id        String   @id @default(cuid())
+  nama      String
+  deskripsi String?
+  aspek     String // JSON array: [{kategori, nama, bobot}]
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Penilaian {
+  id                String   @id @default(cuid())
+  jadwalId          String
+  tenagaKesehatanId String?
+  kategori          String   @default("OBSERVASI") // PERSIAPAN | OBSERVASI | PENILAIAN
+  aspek             String
+  skor              Int?     // 1-5
+  catatan           String?  // Catatan Perseptor
+  metode            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  jadwal            Jadwal          @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
+  tenagaKesehatan   TenagaKesehatan? @relation(fields: [tenagaKesehatanId], references: [id])
+}
+
+// ============ KASUS ============
+
+model Kasus {
+  id            String   @id @default(cuid())
+  jadwalId      String
+  tanggal       DateTime
+  jenisKasus    String
+  kodeAnonim    String?  // kode anonim pasien, mis. P-001
+  masalah       String
+  kondisi       String?
+  tindakan      String?
+  analisis      String?
+  pembahasan    String?
+  pembelajaran  String?
+  rekomendasi   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  jadwal        Jadwal   @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
+}
+
+// ============ TEMUAN -> REKOMENDASI -> RTL ============
+
+model Temuan {
+  id              String    @id @default(cuid())
+  jadwalId        String
+  kategori        String // Kompetensi | SOP | Keselamatan Pasien | PPI | Dokumentasi | Sarana | SDM | Alur Pelayanan | Kepatuhan | Mutu Pelayanan | Lainnya
+  uraian          String
+  tingkatRisiko   String    @default("SEDANG") // RENDAH | SEDANG | TINGGI | KRITIS
+  bukti           String?
+  rekomendasiTeks String?
+  penanggungJawab String?
+  batasWaktu      DateTime?
+  status          String    @default("TERBUKA") // TERBUKA | SELESAI | DITUTUP
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  jadwal          Jadwal    @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
+  rtl             RTL[]
+  rekomendasi     Rekomendasi[]
+}
+
+model Rekomendasi {
+  id                    String    @id @default(cuid())
+  jadwalId              String
+  temuanId              String?
+  masalah               String
+  akarMasalah           String?
+  rekomendasi           String
+  penanggungJawab       String?
+  targetWaktu           DateTime?
+  indikatorKeberhasilan String?
+  status                String    @default("AKTIF") // AKTIF | DILAKSANAKAN | SELESAI
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  jadwal                Jadwal    @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
+  temuan                Temuan?   @relation(fields: [temuanId], references: [id])
+  rtl                   RTL[]
+}
+
+model RTL {
+  id                String    @id @default(cuid())
+  temuanId          String?
+  rekomendasiId     String?
+  puskesmasId       String?
+  kegiatan          String
+  penanggungJawab   String?
+  targetSelesai     DateTime?
+  status            String    @default("BELUM_DIMULAI") // BELUM_DIMULAI | DALAM_PROSES | SELESAI | TERVERIFIKASI | TERLAMBAT
+  bukti             String?
+  tanggalSelesai    DateTime?
+  verifikasiStatus  String    @default("MENUNGGU") // MENUNGGU | DISETUJUI | PERLU_PERBAIKAN
+  verifikasiCatatan String?
+  verifikasiOleh    String?
+  verifikasiPada    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  temuan            Temuan?      @relation(fields: [temuanId], references: [id])
+  rekomendasi       Rekomendasi? @relation(fields: [rekomendasiId], references: [id])
+  puskesmas         Puskesmas?   @relation("RTLPuskesmas", fields: [puskesmasId], references: [id])
+  verifikasi        VerifikasiRTL[]
+  dokumentasi       Dokumentasi[]
+}
+
+model VerifikasiRTL {
+  id     String   @id @default(cuid())
+  rtlId  String
+  aksi   String // DISETUJUI | PERLU_PERBAIKAN | VERIFIKASI_ULANG
+  catatan String?
+  oleh   String?
+  pada   DateTime @default(now())
+  rtl    RTL      @relation(fields: [rtlId], references: [id], onDelete: Cascade)
+}
+
+// ============ EVALUASI KOMPETENSI ============
+
+model EvaluasiKompetensi {
+  id                String   @id @default(cuid())
+  tenagaKesehatanId String
+  kompetensiId      String
+  skor              Int      // 1-5
+  sumber            String   @default("EVALUASI") // AWAL | EVALUASI
+  jadwalId          String?
+  periode           String?
+  catatan           String?
+  createdAt         DateTime @default(now())
+
+  tenagaKesehatan   TenagaKesehatan @relation(fields: [tenagaKesehatanId], references: [id], onDelete: Cascade)
+  kompetensi        Kompetensi      @relation(fields: [kompetensiId], references: [id])
+}
+
+// ============ DOKUMENTASI & BERITA ACARA ============
+
+model Dokumentasi {
+  id         String   @id @default(cuid())
+  jadwalId   String?
+  rtlId      String?
+  puskesmasId String?
+  jenis      String   @default("DOKUMEN") // FOTO | DOKUMEN | INSTRUMEN | HASIL_EVALUASI | BERITA_ACARA | MATERI | BUKTI_RTL
+  nama       String
+  deskripsi  String?
+  fileUrl    String?
+  fileName   String?
+  fileType   String?
+  fileSize   Int?
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+
+  jadwal     Jadwal?   @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
+  rtl        RTL?      @relation(fields: [rtlId], references: [id], onDelete: Cascade)
+  puskesmas  Puskesmas? @relation("DokumentasiPuskesmas", fields: [puskesmasId], references: [id])
+}
+
+model BeritaAcara {
+  id         String   @id @default(cuid())
+  jadwalId   String   @unique
+  nomor      String?
+  konten     String? // JSON snapshot isi berita acara
+  dibuatOleh String?
+  createdAt  DateTime @default(now())
+  jadwal     Jadwal   @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
+}
+
+// ============ SISTEM ============
+
+model Notification {
+  id      String   @id @default(cuid())
+  userId  String
+  judul   String
+  pesan   String
+  tipe    String   @default("INFO") // INFO | JADWAL | TEMUAN | RTL | VERIFIKASI | PERINGATAN
+  refType String?
+  refId   String?
+  dibaca  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String?
+  aksi      String // CREATE | UPDATE | DELETE | LOGIN | LOGOUT | VERIFIKASI | dll
+  entitas   String
+  entitasId String?
+  deskripsi String?
+  dataSebelum String?
+  dataSesudah String?
+  createdAt DateTime @default(now())
+}
+
+model Pengaturan {
+  id     String @id @default(cuid())
+  kunci  String @unique
+  nilai  String?
+}
